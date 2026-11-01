@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Painel do Desenvolvedor</title>
+  <link rel="stylesheet" href="../compartilhado/css/base.css">
+  <link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+  <header>
+    <h1>⚙️ Painel do Desenvolvedor</h1>
+    <a href="../cliente/index.html" class="link-admin">Ver cardápio do cliente</a>
+  </header>
+
+  <main class="admin">
+    <section class="bloco">
+      <h2>Pedidos recebidos</h2>
+      <p id="resumoPendentes" class="alerta-pendentes"></p>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Status</th></tr>
+          </thead>
+          <tbody id="corpoPedidos"></tbody>
+        </table>
+      </div>
+      <p id="semPedidos">Nenhum pedido ainda.</p>
+    </section>
+
+    <section class="bloco">
+      <h2>Configurações gerais</h2>
+      <label>Nome da pizzaria <input type="text" id="cfgNome"></label>
+      <label>Chave Pix (CPF, CNPJ, e-mail, telefone ou aleatória) <input type="text" id="cfgPixChave"></label>
+      <label>Nome do recebedor Pix <input type="text" id="cfgPixNome"></label>
+      <label>Cidade do recebedor <input type="text" id="cfgPixCidade"></label>
+      <label>Taxa de entrega (R$) <input type="number" step="0.01" min="0" id="cfgTaxa"></label>
+      <label>Prazo para pagar o Pix (minutos) <input type="number" min="1" id="cfgPrazoPix"></label>
+      <label><input type="checkbox" id="cfgBannerAtivo"> Mostrar banner de promoção</label>
+      <label>Texto do banner <input type="text" id="cfgBannerTexto"></label>
+    </section>
+
+    <section class="bloco">
+      <h2>Produtos e promoções</h2>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Imagem</th><th>Nome</th><th>Descrição</th><th>Categoria</th>
+              <th>Preço (R$)</th><th>Desconto (%)</th><th>Disponível</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="corpoTabela"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>Novo produto</h2>
+      <div class="form-linha">
+        <div class="novo-imagem">
+          <img id="novaPreview" class="miniatura" alt="">
+          <label class="btn-arquivo">Escolher imagem
+            <input type="file" accept="image/*" hidden onchange="escolherNovaImagem(this)">
+          </label>
+        </div>
+        <input type="text" id="novoNome" placeholder="Nome">
+        <input type="text" id="novoDesc" placeholder="Descrição">
+        <select id="novoCat"></select>
+        <input type="number" step="0.01" min="0" id="novoPreco" placeholder="Preço">
+        <button class="btn" onclick="adicionarProduto()">Adicionar</button>
+      </div>
+    </section>
+
+    <div class="acoes">
+      <button class="btn" onclick="salvarAlteracoes()">💾 Salvar alterações</button>
+      <button class="btn-vermelho" onclick="restaurarPadrao()">Restaurar padrão</button>
+    </div>
+  </main>
+
+  <script src="../compartilhado/js/dados.js"></script>
+  <script src="js/painel.js"></script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+/* ESTILOS DO PAINEL DO DESENVOLVEDOR */
+.link-admin {
+  color: #fff;
+  font-size: 14px;
+}
+
+.admin {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+.bloco {
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+.bloco h2 {
+  margin-bottom: 12px;
+  color: #b71c1c;
+}
+
+.bloco label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.bloco label input[type="text"], .bloco label input[type="number"] {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.tabela-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 6px;
+  text-align: left;
+  font-size: 13px;
+}
+
+th {
+  background: #f5f5f5;
+}
+
+td input[type="text"] {
+  width: 100%;
+  min-width: 110px;
+}
+
+td input[type="number"] {
+  width: 90px;
+}
+
+.form-linha {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-linha input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.acoes {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+#semPedidos {
+  color: #777;
+  font-size: 14px;
+}
+
+.miniatura {
+  width: 80px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.col-imagem {
+  min-width: 100px;
+}
+
+.btn-arquivo, .btn-pequeno {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #1565c0;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.btn-pequeno {
+  background: #757575;
+}
+
+.novo-imagem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+@media (max-width: 800px) {
+  .admin {
+    padding: 0 12px;
+  }
+  table, tbody, tr, td {
+    display: block;
+    width: 100%;
+  }
+  thead {
+    display: none;
+  }
+  tr {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 12px;
+    background: #fafafa;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    min-width: 90px;
+    color: #555;
+  }
+  td[data-label=""]::before {
+    display: none;
+  }
+  td input[type="text"], td input[type="number"], td select {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+  td input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    flex: none;
+  }
+  .col-imagem {
+    flex-wrap: wrap;
+  }
+  .form-linha {
+    flex-direction: column;
+  }
+  .form-linha input, .form-linha select {
+    width: 100%;
+  }
+  .acoes {
+    flex-direction: column;
+  }
+  .acoes button {
+    width: 100%;
+  }
+}
+
+/* ===== PAGAMENTO PIX PENDENTE ===== */
+.alerta-pendentes {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #7a5b00;
+  font-weight: bold;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+tr.pendente {
+  background: #fff8e1;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  margin: 4px 0;
+}
+
+.badge-pendente {
+  background: #ffc107;
+  color: #5d4300;
+}
+
+.badge-pago {
+  background: #c8e6c9;
+  color: #1b5e20;
+}
+
+.btn-confirmar {
+  background: #2e7d32;
+}
+
+.badge-expirado {
+  background: #ffcdd2;
+  color: #b71c1c;
+}

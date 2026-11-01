@@ -1,0 +1,82 @@
+/* ESTILOS COMUNS (usados pelo cliente e pelo desenvolvedor) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: url('../imagem/Gemini_Generated_Image_pddp5qpddp5qpddp.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center; /* Centraliza o ponto de partida do fundo */
+  background-attachment: fixed;
+  color: #000000;
+
+}
+
+
+input, select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+header {
+  background: #b71c1c;
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn, .btn-vermelho {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn {
+  background: #2e7d32;
+}
+
+.btn:hover {
+  background: #1b5e20;
+}
+
+.btn-vermelho {
+  background: #c62828;
+}
+
+.btn-vermelho:hover {
+  background: #8e0000;
+}
+
+@media (max-width: 800px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+  .btn, .btn-vermelho {
+    min-height: 44px;
+  }
+  header {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px;
+  }
+  header h1 {
+    font-size: 22px;
+  }
+}
