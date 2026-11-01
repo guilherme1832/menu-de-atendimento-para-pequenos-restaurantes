@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cardápio - Pizzaria</title>
   <link rel="stylesheet" href="../compartilhado/css/base.css">
   <link rel="stylesheet" href="css/cliente.css">
@@ -10,7 +10,6 @@
 <body>
   
   <header>
-    <!-- Dica: renomeie seu arquivo de imagem para 'logo.png' para evitar erros -->
     <img src="img/WhatsApp Image 2026-10-31 at 19.22.16-Photoroom.png" alt="Logo da Pizzaria" class="logo-img">
     <h1>🍕 <span id="nomePizzaria">Pizzaria</span></h1>
   </header>
@@ -21,7 +20,7 @@
   
     <section id="cardapio"></section> 
   
-    <aside class="carrinho">
+    <aside class="carrinho" id="carrinho">
       <div id="areaPedido" class="coluna">
         <h2>🛒 Seu pedido</h2>
         <div id="itensCarrinho"></div>
@@ -40,7 +39,7 @@
 
         <h3>Seus dados</h3>
         <input type="text" id="nomeCliente" placeholder="Seu nome">
-        <input type="text" id="telefoneCliente" placeholder="Telefone">
+        <input type="tel" id="telefoneCliente" placeholder="Telefone">
         <input type="text" id="enderecoCliente" placeholder="Endereço de entrega">
         <select id="pagamento">
           <option>Pix (pagar agora pelo QR Code)</option>
@@ -55,9 +54,10 @@
     </aside>
   </main>
 
-  <a href="#areaPedido" id="barraCarrinho" class="barra-carrinho">
-    <span>🛒 Ver pedido (<span id="barraQtd"></span>)</span>
-    <span id="barraTotal"></span>
+  <!-- Barra Flutuante no Telemóvel -->
+  <a href="#carrinho" id="barraCarrinho" class="barra-carrinho">
+    <span>🛒 Ver pedido (<span id="barraQtd">0</span>)</span>
+    <span id="barraTotal">R$ 0,00</span>
   </a>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
