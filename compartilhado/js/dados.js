@@ -125,17 +125,17 @@ async function carregarPedidosNuvem() {
       }
     });
 
-    if (!response.ok) return carregarPedidosLocal();
+    if (!response.ok) return carregarPedidos(); // Corrigido para carregarPedidos
 
     const result = await response.json();
     const data = result[0];
 
-    if (!data || !data.pedidos) return carregarPedidosLocal();
+    if (!data || !data.pedidos) return carregarPedidos(); // Corrigido para carregarPedidos
 
     return data.pedidos;
   } catch (err) {
     console.error("Erro ao carregar pedidos da nuvem:", err);
-    return carregarPedidosLocal();
+    return carregarPedidos(); // Corrigido para carregarPedidos
   }
 }
 
@@ -162,7 +162,7 @@ async function salvarPedidosNuvem(listaPedidos) {
   }
 }
 
-// Métodos de compatibilidade local antigos caso necessários
+// Métodos de compatibilidade local antigos
 function carregarPedidos() {
   const salvo = localStorage.getItem(CHAVE_PEDIDOS);
   return salvo ? JSON.parse(salvo) : [];
