@@ -10,7 +10,7 @@ const DADOS_PADRAO = {
     "pixChave": "",
     "pixNome": "",
     "pixCidade": "",
-    "whatsapp": "5581999999999"
+    "whatsapp": "81986379426"
   },
   "taxaEntrega": 5.00,
   "prazoPixMinutos": 10,
