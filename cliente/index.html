@@ -60,9 +60,13 @@
     <span id="barraTotal">R$ 0,00</span>
   </a>
 
-  <!-- Scripts e Bibliotecas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="js/pix.js"></script>
-  <script type="module" src="js/cliente.js"></script>
+<!-- 1. Primeiro a biblioteca oficial do Supabase via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2. Depois o ficheiro de dados que utiliza o Supabase -->
+<script src="../compartilhado/js/dados.js"></script>
+
+<!-- 3. Por fim, o script específico do painel -->
+<script src="js/painel.js"></script>
 </body>
 </html>
