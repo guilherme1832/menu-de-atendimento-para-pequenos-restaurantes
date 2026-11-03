@@ -1,5 +1,5 @@
 // ===== TELA DO DESENVOLVEDOR (ADMIN) =====
-const SENHA = "admin123"; // simples, só para o projeto (não é segurança real)
+const SENHA = "1"; // simples, só para o projeto (não é segurança real)
 let dados = {}; 
 let novaImagem = ""; // imagem do produto que está sendo cadastrado
 
