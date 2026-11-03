@@ -258,10 +258,10 @@ function mostrarTelaPix(pedido) {
 
         <button class="btn-vermelho" onclick="cancelarPix(${pedido.numero})" style="margin-top: 15px; width: 100%;">Cancelar / Voltar</button>
       </div>
-    `;
   }
 
   iniciarVerificacaoStatus(pedido.numero);
+    `;
 }
 
 function copiarChavePix() {
@@ -321,7 +321,7 @@ function dispararWhatsAppFinal(pedido) {
   mensagem += `🚚 Entrega: ${formatarPreco(pedido.taxaEntrega)}\n`;
   mensagem += `💰 *TOTAL PAGO: ${formatarPreco(pedido.total)}*`;
 
-  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5511999999999"; 
+  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5581986379426"; 
   const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
   window.open(urlWhatsApp, "_blank");
