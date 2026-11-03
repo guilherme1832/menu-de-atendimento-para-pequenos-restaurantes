@@ -108,8 +108,11 @@ function lerCampos() {
 
 // ----- Ações dos botões -----
 async function salvarAlteracoes() {
-  lerCampos();
+  lerCampos(); // Lê todos os campos do painel para o objeto "dados"
+
+  // Salva tudo na nuvem Supabase (produtos, taxas, banners e configurações do Pix)
   const sucesso = await salvarDados(dados);
+
   if (sucesso) {
     alert("✅ Alterações salvas com sucesso na nuvem Supabase!");
   } else {
