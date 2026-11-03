@@ -80,19 +80,16 @@ async function salvarDados(dadosAtualizados) {
   }
 }
 
-// ----- NOVA FUNÇÃO: Salvar Configurações do Pix na Nuvem -----
+// ----- Salvar Configurações do Pix na Nuvem -----
 async function salvarConfiguracoesPix(chavePix, pixNome, pixCidade) {
-  // Garante que temos os dados atuais carregados
   if (!dados || !dados.pizzaria) {
     dados = await carregarDados();
   }
 
-  // Atualiza os dados da pizzaria com os novos valores de Pix
   dados.pizzaria.pixChave = chavePix;
   dados.pizzaria.pixNome = pixNome;
   dados.pizzaria.pixCidade = pixCidade;
 
-  // Utiliza a função geral de salvamento para atualizar o Supabase e o localStorage
   const sucesso = await salvarDados(dados);
   return sucesso;
 }
@@ -112,10 +109,60 @@ function formatarPreco(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// ===== PEDIDOS LOCAL =====
+// ===== PEDIDOS NA NUVEM (SUPABASE) =====
 const CHAVE_PEDIDOS = "pizzariaPedidos";
 const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
 
+// Carrega os pedidos da nuvem Supabase (com fallback para localStorage)
+async function carregarPedidosNuvem() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?id=eq.1&select=pedidos`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) return carregarPedidosLocal();
+
+    const result = await response.json();
+    const data = result[0];
+
+    if (!data || !data.pedidos) return carregarPedidosLocal();
+
+    return data.pedidos;
+  } catch (err) {
+    console.error("Erro ao carregar pedidos da nuvem:", err);
+    return carregarPedidosLocal();
+  }
+}
+
+// Salva os pedidos diretamente na nuvem Supabase e no localStorage
+async function salvarPedidosNuvem(listaPedidos) {
+  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(listaPedidos));
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ pedidos: listaPedidos })
+    });
+
+    return response.ok;
+  } catch (err) {
+    console.error("Erro ao salvar pedidos na nuvem:", err);
+    return false;
+  }
+}
+
+// Métodos de compatibilidade local antigos caso necessários
 function carregarPedidos() {
   const salvo = localStorage.getItem(CHAVE_PEDIDOS);
   return salvo ? JSON.parse(salvo) : [];
