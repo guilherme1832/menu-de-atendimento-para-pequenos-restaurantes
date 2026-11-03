@@ -353,7 +353,7 @@ function enviarParaWhatsApp(nome, telefone, endereco, tipoEntrega, formaPagament
   mensagem += `🚚 Entrega: ${formatarPreco(taxaAtual)}\n`;
   mensagem += `💰 *TOTAL: ${formatarPreco(totalGeral)}*`;
 
-  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5511999999999"; 
+  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5581986379426"; 
   const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
   window.open(urlWhatsApp, "_blank");
