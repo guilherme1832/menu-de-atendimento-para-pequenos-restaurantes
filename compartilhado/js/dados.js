@@ -80,6 +80,23 @@ async function salvarDados(dadosAtualizados) {
   }
 }
 
+// ----- NOVA FUNÇÃO: Salvar Configurações do Pix na Nuvem -----
+async function salvarConfiguracoesPix(chavePix, pixNome, pixCidade) {
+  // Garante que temos os dados atuais carregados
+  if (!dados || !dados.pizzaria) {
+    dados = await carregarDados();
+  }
+
+  // Atualiza os dados da pizzaria com os novos valores de Pix
+  dados.pizzaria.pixChave = chavePix;
+  dados.pizzaria.pixNome = pixNome;
+  dados.pizzaria.pixCidade = pixCidade;
+
+  // Utiliza a função geral de salvamento para atualizar o Supabase e o localStorage
+  const sucesso = await salvarDados(dados);
+  return sucesso;
+}
+
 // Funções utilitárias
 function precoFinal(produto) {
   return produto.preco * (1 - (produto.desconto || 0) / 100);
