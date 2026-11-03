@@ -1,5 +1,5 @@
-// ===== SUPABASE CONFIGURAÇÃO =====
-const SUPABASE_URL = "https://amzfsqstroggrvgmhtxb.supabase.co";
+// ===== SUPABASE CONFIGURAÇÃO (URL CORRIGIDA COM O SEU LINK REAL) =====
+const SUPABASE_URL = "https://amzfsqstrogqrvgmhtxb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_z5plbE-ChWuz-lh1Kxzo4g_IaA34-Fk";
 
 const CHAVE_LOCAL = "pizzariaDados";
@@ -79,4 +79,53 @@ async function salvarDados(dadosAtualizados) {
     console.error("Erro ao guardar:", err);
     return false;
   }
+}
+
+// Funções utilitárias
+function precoFinal(produto) {
+  return produto.preco * (1 - (produto.desconto || 0) / 100);
+}
+
+function imagemDoProduto(produto) {
+  if (produto.imagem) return produto.imagem;
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
+function formatarPreco(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// ===== PEDIDOS LOCAL =====
+const CHAVE_PEDIDOS = "pizzariaPedidos";
+const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+
+function carregarPedidos() {
+  const salvo = localStorage.getItem(CHAVE_PEDIDOS);
+  return salvo ? JSON.parse(salvo) : [];
+}
+
+function salvarPedidos(lista) {
+  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista));
+}
+
+function verificarExpirados() {
+  const pedidos = carregarPedidos();
+  let mudou = false;
+  pedidos.forEach(function (p) {
+    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
+      p.pagamentoStatus = "Expirado";
+      p.status = "Cancelado";
+      mudou = true;
+    }
+  });
+  if (mudou) salvarPedidos(pedidos);
+  return mudou;
+}
+
+function formatarTempo(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const min = String(Math.floor(total / 60)).padStart(2, "0");
+  const seg = String(total % 60).padStart(2, "0");
+  return min + ":" + seg;
 }
