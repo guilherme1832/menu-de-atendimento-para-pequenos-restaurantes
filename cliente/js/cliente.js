@@ -161,8 +161,8 @@ function mostrarCarrinho() {
   document.getElementById("total").textContent = formatarPreco(subtotal + taxa);
 }
 
-// ----- Finalizar pedido (Gera Pix se selecionado ou envia direto para o WhatsApp) -----
-function finalizarPedido() {
+// ----- Finalizar pedido (Gera Pix na nuvem ou envia direto para o WhatsApp) -----
+async function finalizarPedido() {
   const nome = document.getElementById("nomeCliente").value.trim();
   const telefone = document.getElementById("telefoneCliente").value.trim();
   const endereco = document.getElementById("enderecoCliente").value.trim();
@@ -181,7 +181,7 @@ function finalizarPedido() {
   const taxaAtual = obterTaxaEntrega();
   const totalGeral = subtotal + taxaAtual;
 
-  // Se o pagamento for Pix, exibe a tela com o QR Code e aguarda confirmação
+  // Se o pagamento for Pix, cria o pedido na nuvem e exibe a tela do QR Code
   if (formaPagamento.toLowerCase().includes("pix")) {
     const numeroPedido = Date.now().toString().slice(-6);
     const prazoMinutos = dados.prazoPixMinutos || 10;
@@ -207,9 +207,10 @@ function finalizarPedido() {
       observacao: observacao
     };
 
-    let listaPedidos = JSON.parse(localStorage.getItem("pedidos_pizzaria") || "[]");
+    // Salva o pedido diretamente na nuvem Supabase para aparecer no painel do administrador
+    let listaPedidos = await carregarPedidosNuvem();
     listaPedidos.push(novoPedido);
-    localStorage.setItem("pedidos_pizzaria", JSON.stringify(listaPedidos));
+    await salvarPedidosNuvem(listaPedidos);
 
     mostrarTelaPix(novoPedido);
     return;
@@ -252,7 +253,7 @@ function mostrarTelaPix(pedido) {
 
         <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; color: #856404;">
           <p>⏳ Aguardando confirmação do pagamento...</p>
-          <p style="font-size: 12px;">Assim que o pagamento for confirmado pelo estabelecimento, o seu pedido será enviado automaticamente para o WhatsApp!</p>
+          <p style="font-size: 12px;">Assim que o pagamento for confirmado pelo estabelecimento no painel, o seu pedido será enviado automaticamente para o WhatsApp!</p>
         </div>
 
         <button class="btn-vermelho" onclick="cancelarPix(${pedido.numero})" style="margin-top: 15px; width: 100%;">Cancelar / Voltar</button>
@@ -270,13 +271,13 @@ function copiarChavePix() {
   alert("✅ Código Pix Copia e Cola copiado para a área de transferência!");
 }
 
-function cancelarPix(numeroPedido) {
-  let listaPedidos = JSON.parse(localStorage.getItem("pedidos_pizzaria") || "[]");
+async function cancelarPix(numeroPedido) {
+  let listaPedidos = await carregarPedidosNuvem();
   listaPedidos = listaPedidos.map(p => {
     if (p.numero === numeroPedido) p.status = "Cancelado";
     return p;
   });
-  localStorage.setItem("pedidos_pizzaria", JSON.stringify(listaPedidos));
+  await salvarPedidosNuvem(listaPedidos);
 
   const areaConfirmacao = document.getElementById("areaConfirmacao");
   if (areaConfirmacao) areaConfirmacao.style.display = "none";
@@ -284,8 +285,8 @@ function cancelarPix(numeroPedido) {
 }
 
 function iniciarVerificacaoStatus(numeroPedido) {
-  const intervalo = setInterval(() => {
-    const listaPedidos = JSON.parse(localStorage.getItem("pedidos_pizzaria") || "[]");
+  const intervalo = setInterval(async () => {
+    const listaPedidos = await carregarPedidosNuvem();
     const pedido = listaPedidos.find(p => p.numero === numeroPedido);
 
     if (!pedido || pedido.status === "Cancelado") {
