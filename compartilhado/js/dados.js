@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 // Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getFirestore(app, "(default)");
 
 // Referência para um único documento na nuvem que guarda todo o sistema
 const docRef = doc(db, "sistema", "cardapio_geral");
