@@ -30,8 +30,8 @@ async function carregarDados() {
       .eq('id', 1)
       .single();
 
-    if (error || !data) {
-      console.warn("A usar cache local/padrão devido a erro:", error);
+    if (error || !data || !data.dados) {
+      console.warn("A usar cache local/padrão devido a erro no Supabase:", error);
       const local = localStorage.getItem(CHAVE_LOCAL);
       return local ? JSON.parse(local) : DADOS_PADRAO;
     }
@@ -40,7 +40,8 @@ async function carregarDados() {
     return data.dados;
   } catch (err) {
     console.error("Erro na ligação ao Supabase:", err);
-    return DADOS_PADRAO;
+    const local = localStorage.getItem(CHAVE_LOCAL);
+    return local ? JSON.parse(local) : DADOS_PADRAO;
   }
 }
 
