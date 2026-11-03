@@ -1,73 +1,39 @@
 // ===== TELA DO DESENVOLVEDOR (ADMIN) =====
-import { 
-  carregarDados, 
-  salvarDados, 
-  resetarDados, 
-  carregarPedidosNuvem, 
-  salvarPedidosNuvem, 
-  formatarPreco, 
-  precoFinal, 
-  imagemDoProduto 
-} from "../../compartilhado/js/dados.js";
+const SENHA = "admin123"; // simples, só para o projeto (não é segurança real)
+let dados = carregarDados();
+let novaImagem = ""; // imagem do produto que está sendo cadastrado
 
-const SENHA = "admin123";
-
-// 🔐 BLOQUEIO DE SENHA IMEDIATO
-const senhaDigitada = prompt("Digite a senha do desenvolvedor:");
-
-if (senhaDigitada !== SENHA) {
-  document.body.innerHTML = "<h2 style='padding:40px; font-family:sans-serif; color:red;'>❌ Acesso negado. Senha incorreta ou cancelada.</h2>";
-  throw new Error("Acesso negado");
-}
-
-let dados = {
-  pizzaria: { nome: "", pixChave: "", pixNome: "", pixCidade: "" },
-  taxaEntrega: 0,
-  prazoPixMinutos: 10,
-  banner: { ativo: false, texto: "" },
-  categorias: [],
-  produtos: []
-};
-
-let pedidosGlobal = [];
-let novaImagem = "";
-
-const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
-
-// ----- Configurações -----
+// ----- Preenche os campos de configuração -----
 function mostrarConfig() {
-  if (!dados || !dados.pizzaria) return;
-  if (document.getElementById("cfgNome")) document.getElementById("cfgNome").value = dados.pizzaria.nome || "";
-  if (document.getElementById("cfgPixChave")) document.getElementById("cfgPixChave").value = dados.pizzaria.pixChave || "";
-  if (document.getElementById("cfgPixNome")) document.getElementById("cfgPixNome").value = dados.pizzaria.pixNome || dados.pizzaria.nome || "";
-  if (document.getElementById("cfgPixCidade")) document.getElementById("cfgPixCidade").value = dados.pizzaria.pixCidade || "";
-  if (document.getElementById("cfgTaxa")) document.getElementById("cfgTaxa").value = dados.taxaEntrega || 0;
-  if (document.getElementById("cfgPrazoPix")) document.getElementById("cfgPrazoPix").value = dados.prazoPixMinutos || 10;
-  if (document.getElementById("cfgBannerAtivo")) document.getElementById("cfgBannerAtivo").checked = dados.banner ? dados.banner.ativo : false;
-  if (document.getElementById("cfgBannerTexto")) document.getElementById("cfgBannerTexto").value = dados.banner ? dados.banner.texto : "";
+  document.getElementById("cfgNome").value = dados.pizzaria.nome;
+  document.getElementById("cfgPixChave").value = dados.pizzaria.pixChave || "";
+  document.getElementById("cfgPixNome").value = dados.pizzaria.pixNome || dados.pizzaria.nome;
+  document.getElementById("cfgPixCidade").value = dados.pizzaria.pixCidade || "";
+  document.getElementById("cfgTaxa").value = dados.taxaEntrega;
+  document.getElementById("cfgPrazoPix").value = dados.prazoPixMinutos || 10;
+  document.getElementById("cfgBannerAtivo").checked = dados.banner.ativo;
+  document.getElementById("cfgBannerTexto").value = dados.banner.texto;
 }
 
+// ----- Preenche o select de categorias do novo produto -----
 function preencherCategorias() {
   const select = document.getElementById("novoCat");
-  if (!select || !dados || !dados.categorias) return;
-  select.innerHTML = "";
+  select.innerHTML = ""; // Limpa para evitar duplicação ou dados antigos
   dados.categorias.forEach(c => {
     select.innerHTML += `<option value="${c}">${c}</option>`;
   });
 }
 
+// ----- Monta a tabela de produtos -----
 function mostrarTabela() {
   const corpo = document.getElementById("corpoTabela");
-  if (!corpo || !dados || !dados.produtos) return;
   corpo.innerHTML = "";
 
   dados.produtos.forEach(function (p) {
     let opcoes = "";
-    if (dados.categorias) {
-      dados.categorias.forEach(function (c) {
-        opcoes += `<option ${c === p.categoria ? "selected" : ""}>${c}</option>`;
-      });
-    }
+    dados.categorias.forEach(function (c) {
+      opcoes += `<option ${c === p.categoria ? "selected" : ""}>${c}</option>`;
+    });
 
     corpo.innerHTML += `
       <tr>
@@ -78,119 +44,174 @@ function mostrarTabela() {
           </label>
           <button class="btn-pequeno" onclick="removerImagem(${p.id})">Remover</button>
         </td>
-        <td data-label="Nome"><input type="text" id="nome-${p.id}" value="${p.nome || ""}"></td>
-        <td data-label="Descrição"><input type="text" id="desc-${p.id}" value="${p.descricao || ""}"></td>
+        <td data-label="Nome"><input type="text" id="nome-${p.id}" value="${p.nome}"></td>
+        <td data-label="Descrição"><input type="text" id="desc-${p.id}" value="${p.descricao}"></td>
         <td data-label="Categoria"><select id="cat-${p.id}">${opcoes}</select></td>
-        <td data-label="Preço (R$)"><input type="number" step="0.01" min="0" id="preco-${p.id}" value="${p.preco || 0}"></td>
-        <td data-label="Desconto (%)"><input type="number" min="0" max="100" id="promo-${p.id}" value="${p.desconto || 0}"></td>
+        <td data-label="Preço (R$)"><input type="number" step="0.01" min="0" id="preco-${p.id}" value="${p.preco}"></td>
+        <td data-label="Desconto (%)"><input type="number" min="0" max="100" id="promo-${p.id}" value="${p.desconto}"></td>
         <td data-label="Disponível"><input type="checkbox" id="disp-${p.id}" ${p.disponivel ? "checked" : ""}></td>
         <td data-label=""><button class="btn-vermelho" onclick="removerProduto(${p.id})">Excluir</button></td>
       </tr>`;
   });
 }
 
+// ----- Lê o que foi digitado e atualiza o objeto "dados" -----
 function lerCampos() {
-  if (!dados) return;
-  if (!dados.pizzaria) dados.pizzaria = {};
-  if (!dados.banner) dados.banner = {};
+  dados.pizzaria.nome = document.getElementById("cfgNome").value;
+  dados.pizzaria.pixChave = document.getElementById("cfgPixChave").value.trim();
+  dados.pizzaria.pixNome = document.getElementById("cfgPixNome").value;
+  dados.pizzaria.pixCidade = document.getElementById("cfgPixCidade").value;
+  dados.taxaEntrega = Number(document.getElementById("cfgTaxa").value);
+  dados.prazoPixMinutos = Number(document.getElementById("cfgPrazoPix").value) || 10;
+  dados.banner.ativo = document.getElementById("cfgBannerAtivo").checked;
+  dados.banner.texto = document.getElementById("cfgBannerTexto").value;
 
-  const cfgNome = document.getElementById("cfgNome");
-  if (cfgNome) dados.pizzaria.nome = cfgNome.value;
+  dados.produtos.forEach(function (p) {
+    p.nome = document.getElementById("nome-" + p.id).value;
+    p.descricao = document.getElementById("desc-" + p.id).value;
+    p.categoria = document.getElementById("cat-" + p.id).value;
+    p.preco = Number(document.getElementById("preco-" + p.id).value);
+    p.desconto = Number(document.getElementById("promo-" + p.id).value);
+    p.disponivel = document.getElementById("disp-" + p.id).checked;
+  });
+}
 
-  const cfgPixChave = document.getElementById("cfgPixChave");
-  if (cfgPixChave) dados.pizzaria.pixChave = cfgPixChave.value.trim();
-
-  const cfgPixNome = document.getElementById("cfgPixNome");
-  if (cfgPixNome) dados.pizzaria.pixNome = cfgPixNome.value;
-
-  const cfgPixCidade = document.getElementById("cfgPixCidade");
-  if (cfgPixCidade) dados.pizzaria.pixCidade = cfgPixCidade.value;
-
-  const cfgTaxa = document.getElementById("cfgTaxa");
-  if (cfgTaxa) dados.taxaEntrega = Number(cfgTaxa.value);
-
-  const cfgPrazoPix = document.getElementById("cfgPrazoPix");
-  if (cfgPrazoPix) dados.prazoPixMinutos = Number(cfgPrazoPix.value) || 10;
-
-  const cfgBannerAtivo = document.getElementById("cfgBannerAtivo");
-  if (cfgBannerAtivo) dados.banner.ativo = cfgBannerAtivo.checked;
-
-  const cfgBannerTexto = document.getElementById("cfgBannerTexto");
-  if (cfgBannerTexto) dados.banner.texto = cfgBannerTexto.value;
-
-  if (dados.produtos) {
-    dados.produtos.forEach(function (p) {
-      const nomeInput = document.getElementById("nome-" + p.id);
-      if (nomeInput) {
-        p.nome = nomeInput.value;
-        const descInput = document.getElementById("desc-" + p.id);
-        if (descInput) p.descricao = descInput.value;
-        const catInput = document.getElementById("cat-" + p.id);
-        if (catInput) p.categoria = catInput.value;
-        const precoInput = document.getElementById("preco-" + p.id);
-        if (precoInput) p.preco = Number(precoInput.value);
-        const promoInput = document.getElementById("promo-" + p.id);
-        if (promoInput) p.desconto = Number(promoInput.value);
-        const dispInput = document.getElementById("disp-" + p.id);
-        if (dispInput) p.disponivel = dispInput.checked;
-      }
-    });
+// ----- Ações dos botões -----
+function salvarAlteracoes() {
+  lerCampos();
+  if (salvarDados(dados)) {
+    alert("Alterações salvas no PC! Para atualizar também no telemóvel, clica em 'Copiar Código do dados.js' e atualiza o ficheiro no GitHub.");
   }
 }
 
-window.salvarAlteracoes = async function() {
-  if (!dados) { alert("Os dados ainda estão a carregar. Aguarde um momento."); return; }
+// NOVO: Gera e copia o código pronto para colar no dados.js
+function exportarDados() {
   lerCampos();
-  const sucesso = await salvarDados(dados);
-  if (sucesso) {
-    alert("Alterações salvas na nuvem!");
+  const codigoExportado = `// ===== DADOS COMPARTILHADOS (Atualizados pelo Painel) =====
+const CHAVE = "pizzariaDados";
+
+const DADOS_PADRAO = ${JSON.stringify(dados, null, 2)};
+
+function carregarDados() {
+  const salvo = localStorage.getItem(CHAVE);
+  if (salvo) {
+    const dadosSalvos = JSON.parse(salvo);
+    if (!dadosSalvos.produtos || dadosSalvos.produtos.length === 0) {
+      dadosSalvos.produtos = DADOS_PADRAO.produtos;
+    }
+    dadosSalvos.produtos.forEach(function (p) {
+      if (p.imagem && p.imagem.startsWith("img/")) p.imagem = "../compartilhado/" + p.imagem;
+      if (p.imagem === undefined) {
+        const padrao = DADOS_PADRAO.produtos.find(x => x.id === p.id);
+        p.imagem = padrao ? padrao.imagem : "";
+      }
+    });
+    return dadosSalvos;
   }
-};
+  return JSON.parse(JSON.stringify(DADOS_PADRAO));
+}
 
-window.adicionarProduto = function() {
-  if (!dados) { alert("Os dados ainda estão a carregar. Aguarde um momento."); return; }
-  lerCampos();
-  const inputNome = document.getElementById("novoNome");
-  const inputPreco = document.getElementById("novoPreco");
-  const inputDesc = document.getElementById("novoDesc");
-  const inputCat = document.getElementById("novoCat");
-
-  if (!inputNome || !inputPreco) return;
-
-  const nome = inputNome.value.trim();
-  const preco = Number(inputPreco.value);
-
-  if (nome === "" || preco <= 0) { 
-    alert("Informe nome e preço válidos."); 
-    return; 
+function salvarDados(dados) {
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(dados));
+    return true;
+  } catch (erro) {
+    alert("Não foi possível salvar: o armazenamento do navegador está cheio.");
+    return false;
   }
+}
 
-  if (!dados.produtos) dados.produtos = [];
+function resetarDados() {
+  localStorage.removeItem(CHAVE);
+}
+
+// ===== PEDIDOS (guardados separados do cardápio) =====
+const CHAVE_PEDIDOS = "pizzariaPedidos";
+const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+
+function carregarPedidos() {
+  const salvo = localStorage.getItem(CHAVE_PEDIDOS);
+  return salvo ? JSON.parse(salvo) : [];
+}
+
+function salvarPedidos(lista) {
+  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista));
+}
+
+function verificarExpirados() {
+  const pedidos = carregarPedidos();
+  let mudou = false;
+  pedidos.forEach(function (p) {
+    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
+      p.pagamentoStatus = "Expirado";
+      p.status = "Cancelado";
+      mudou = true;
+    }
+  });
+  if (mudou) salvarPedidos(pedidos);
+  return mudou;
+}
+
+function formatarTempo(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const min = String(Math.floor(total / 60)).padStart(2, "0");
+  const seg = String(total % 60).padStart(2, "0");
+  return min + ":" + seg;
+}
+
+function precoFinal(produto) {
+  return produto.preco * (1 - (produto.desconto || 0) / 100);
+}
+
+function imagemDoProduto(produto) {
+  if (produto.imagem) return produto.imagem;
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
+function formatarPreco(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}`;
+
+  navigator.clipboard.writeText(codigoExportado).then(() => {
+    alert("✅ Código do dados.js copiado com sucesso para a área de transferência!\n\nAgora basta colares no teu ficheiro 'dados.js' no VS Code e fazeres o git push para atualizar o telemóvel.");
+  }).catch(err => {
+    console.error("Erro ao copiar: ", err);
+    alert("Erro ao copiar automaticamente. Verifique a consola.");
+  });
+}
+
+function adicionarProduto() {
+  lerCampos(); // não perde o que já foi editado
+  const nome = document.getElementById("novoNome").value.trim();
+  const preco = Number(document.getElementById("novoPreco").value);
+  if (nome === "" || preco <= 0) { alert("Informe nome e preço válidos."); return; }
 
   dados.produtos.push({
-    id: Date.now(),
+    id: Date.now(), // número único
     nome: nome,
-    descricao: inputDesc ? inputDesc.value : "",
-    categoria: inputCat ? inputCat.value : "",
+    descricao: document.getElementById("novoDesc").value,
+    categoria: document.getElementById("novoCat").value,
     preco: preco,
     desconto: 0,
     disponivel: true,
     imagem: novaImagem
   });
-
   novaImagem = "";
-  const preview = document.getElementById("novaPreview");
-  if (preview) preview.src = imagemDoProduto({});
-  
-  inputNome.value = "";
-  if (inputDesc) inputDesc.value = "";
-  inputPreco.value = "";
-  
-  mostrarTabela();
-};
+  document.getElementById("novaPreview").src = imagemDoProduto({});
 
+  document.getElementById("novoNome").value = "";
+  document.getElementById("novoDesc").value = "";
+  document.getElementById("novoPreco").value = "";
+  mostrarTabela();
+}
+
+// ----- Imagens -----
 function processarImagem(arquivo, aoTerminar) {
-  if (!arquivo.type.startsWith("image/")) { alert("Escolha uma imagem válida."); return; }
+  if (!arquivo.type.startsWith("image/")) {
+    alert("Escolha um arquivo de imagem (jpg, png...).");
+    return;
+  }
   const leitor = new FileReader();
   leitor.onload = function (e) {
     const img = new Image();
@@ -207,77 +228,69 @@ function processarImagem(arquivo, aoTerminar) {
   leitor.readAsDataURL(arquivo);
 }
 
-window.trocarImagem = function(id, input) {
+function trocarImagem(id, input) {
   if (!input.files[0]) return;
   processarImagem(input.files[0], function (url) {
     const produto = dados.produtos.find(p => p.id === id);
-    if (produto) {
-      produto.imagem = url;
-      const imgElem = document.getElementById("img-" + id);
-      if (imgElem) imgElem.src = url;
-    }
+    produto.imagem = url;
+    document.getElementById("img-" + id).src = url;
   });
-};
+}
 
-window.removerImagem = function(id) {
-  lerCampos();
-  const produto = dados.produtos.find(p => p.id === id);
-  if (produto) produto.imagem = "";
+function removerImagem(id) {
+  lerCampos(); // não perde o que já foi editado
+  dados.produtos.find(p => p.id === id).imagem = "";
   mostrarTabela();
-};
+}
 
-window.escolherNovaImagem = function(input) {
+function escolherNovaImagem(input) {
   if (!input.files[0]) return;
   processarImagem(input.files[0], function (url) {
     novaImagem = url;
-    const preview = document.getElementById("novaPreview");
-    if (preview) preview.src = url;
+    document.getElementById("novaPreview").src = url;
   });
-};
+}
 
-window.removerProduto = function(id) {
+function removerProduto(id) {
   if (!confirm("Excluir este produto?")) return;
   lerCampos();
   dados.produtos = dados.produtos.filter(p => p.id !== id);
   mostrarTabela();
-};
+}
 
-window.restaurarPadrao = async function() {
-  if (!confirm("Restaurar padrões na nuvem?")) return;
-  await resetarDados();
-  dados = await carregarDados();
+function restaurarPadrao() {
+  if (!confirm("Isso apaga todas as alterações. Continuar?")) return;
+  resetarDados();
+  dados = carregarDados();
   preencherCategorias();
   mostrarConfig();
   mostrarTabela();
-};
+}
 
-// ----- Gestão de Pedidos na Nuvem -----
-async function mostrarPedidos() {
-  pedidosGlobal = await carregarPedidosNuvem();
+// ----- Pedidos -----
+function mostrarPedidos() {
+  verificarExpirados(); // cancela Pix com prazo vencido
+  const pedidos = carregarPedidos();
   const corpo = document.getElementById("corpoPedidos");
-  const semPedidos = document.getElementById("semPedidos");
-  if (!corpo) return;
-
   corpo.innerHTML = "";
-  if (semPedidos) semPedidos.style.display = pedidosGlobal.length ? "none" : "block";
+  document.getElementById("semPedidos").style.display = pedidos.length ? "none" : "block";
 
-  const qtdPendentes = pedidosGlobal.filter(p => p.pagamentoStatus === "Pendente" && p.status !== "Cancelado").length;
+  const qtdPendentes = pedidos.filter(p => p.pagamentoStatus === "Pendente" && p.status !== "Cancelado").length;
   const aviso = document.getElementById("resumoPendentes");
-  if (aviso) {
-    aviso.textContent = qtdPendentes > 0 ? `⏳ ${qtdPendentes} pedido(s) com pagamento Pix pendente` : "";
-    aviso.style.display = qtdPendentes > 0 ? "block" : "none";
-  }
+  aviso.textContent = qtdPendentes > 0 ? `⏳ ${qtdPendentes} pedido(s) com pagamento Pix pendente` : "";
+  aviso.style.display = qtdPendentes > 0 ? "block" : "none";
 
-  pedidosGlobal.slice().reverse().forEach(function (p) {
-    let itens = p.itens ? p.itens.map(i => `${i.qtd}x ${i.nome}`).join("<br>") : "";
+  pedidos.slice().reverse().forEach(function (p) {
+    let itens = p.itens.map(i => `${i.qtd}x ${i.nome}`).join("<br>");
     const pendente = p.pagamentoStatus === "Pendente" && p.status !== "Cancelado";
-    let pagHtml = p.pagamento || "";
-    
+    let pagHtml = p.pagamento;
     if (pendente) {
-      pagHtml += `<br><span class="badge" style="background:#ffc107; color:#000; padding:2px 6px; border-radius:4px;">⏳ Pagamento pendente</span>
-                  <br><button class="btn-pequeno" onclick="confirmarPagamento(${p.numero})" style="margin-top:4px;">Confirmar Pix</button>`;
+      pagHtml += `<br><span class="badge badge-pendente">⏳ Pagamento pendente<span class="contagem" data-expira="${p.expiraEm || ""}"></span></span>
+                  <br><button class="btn-pequeno btn-confirmar" onclick="confirmarPagamento(${p.numero})">Confirmar pagamento</button>`;
+    } else if (p.pagamentoStatus === "Expirado") {
+      pagHtml += `<br><span class="badge badge-expirado">⌛ Prazo esgotado</span>`;
     } else if (p.pagamentoStatus === "Pago") {
-      pagHtml += `<br><span class="badge" style="background:#28a745; color:#fff; padding:2px 6px; border-radius:4px;">✅ Pago</span>`;
+      pagHtml += `<br><span class="badge badge-pago">✅ Pago</span>`;
     }
 
     let opcoes = "";
@@ -286,47 +299,67 @@ async function mostrarPedidos() {
     });
 
     corpo.innerHTML += `
-      <tr>
+      <tr class="${pendente ? "pendente" : ""}">
         <td data-label="Pedido">#${p.numero}</td>
         <td data-label="Data">${p.data}</td>
-        <td data-label="Cliente">${p.cliente || ""}<br>${p.telefone || ""}<br>${p.endereco || ""}</td>
+        <td data-label="Cliente">${p.cliente}<br>${p.telefone}<br>${p.endereco}</td>
         <td data-label="Itens">${itens}${p.observacao ? "<br><em>Obs: " + p.observacao + "</em>" : ""}</td>
-        <td data-label="Total">${formatarPreco(p.total || 0)}</td>
+        <td data-label="Total">${formatarPreco(p.total)}</td>
         <td data-label="Pagamento">${pagHtml}</td>
         <td data-label="Status"><select onchange="mudarStatus(${p.numero}, this.value)">${opcoes}</select></td>
       </tr>`;
   });
 }
 
-window.mudarStatus = async function(numero, novoStatus) {
-  const pedido = pedidosGlobal.find(p => p.numero === numero);
-  if (!pedido) return;
+function mudarStatus(numero, novoStatus) {
+  const pedidos = carregarPedidos();
+  const pedido = pedidos.find(p => p.numero === numero);
+  const avancando = ["Em preparo", "Saiu para entrega", "Entregue"].includes(novoStatus);
+
+  if (pedido.pagamentoStatus === "Pendente" && avancando) {
+    if (!confirm("O pagamento Pix deste pedido ainda está PENDENTE. Deseja continuar mesmo assim?")) {
+      mostrarPedidos();
+      return;
+    }
+  }
   pedido.status = novoStatus;
-  await salvarPedidosNuvem(pedidosGlobal);
+  salvarPedidos(pedidos);
   mostrarPedidos();
-};
-
-window.confirmarPagamento = async function(numero) {
-  if (!confirm("Confirma que o Pix do pedido #" + numero + " foi recebido?")) return;
-  const pedido = pedidosGlobal.find(p => p.numero === numero);
-  if (!pedido) return;
-  pedido.pagamentoStatus = "Pago";
-  await salvarPedidosNuvem(pedidosGlobal);
-  mostrarPedidos();
-};
-
-// ----- Inicialização -----
-async function iniciar() {
-  dados = await carregarDados();
-  preencherCategorias();
-  const preview = document.getElementById("novaPreview");
-  if (preview) preview.src = imagemDoProduto({});
-  
-  mostrarConfig();
-  mostrarTabela();
-  await mostrarPedidos();
-
-  setInterval(mostrarPedidos, 10000);
 }
 
-iniciar();
+function confirmarPagamento(numero) {
+  if (!confirm("Confirma que o Pix do pedido #" + numero + " foi recebido?")) return;
+  const pedidos = carregarPedidos();
+  pedidos.find(p => p.numero === numero).pagamentoStatus = "Pago";
+  salvarPedidos(pedidos);
+  mostrarPedidos();
+}
+
+function atualizarContagens() {
+  if (verificarExpirados()) {
+    mostrarPedidos();
+    return;
+  }
+  document.querySelectorAll(".contagem").forEach(function (span) {
+    const expira = Number(span.dataset.expira);
+    if (expira) span.textContent = " (" + formatarTempo(expira - Date.now()) + ")";
+  });
+}
+
+// ----- Início (pede a senha) -----
+function iniciar() {
+  preencherCategorias();
+  document.getElementById("novaPreview").src = imagemDoProduto({});
+  mostrarConfig();
+  mostrarTabela();
+  mostrarPedidos();
+  window.addEventListener("storage", mostrarPedidos);
+  atualizarContagens();
+  setInterval(atualizarContagens, 1000);
+}
+
+if (prompt("Senha do desenvolvedor:") === SENHA) {
+  iniciar();
+} else {
+  document.body.innerHTML = "<h2 style='padding:20px'>Acesso negado.</h2>";
+}
