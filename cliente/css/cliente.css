@@ -193,7 +193,7 @@ header {
 /* --- AJUSTES DE RESPONSIVIDADE (MOBILE) --- */
 @media (max-width: 800px) {
   body {
-    padding-bottom: 80px; /* Espaço para o botão flutuante não cobrir o conteúdo */
+    padding-bottom: 80px; /* Espaço para a barra flutuante não cobrir o conteúdo */
   }
 
   .banner {
@@ -208,11 +208,19 @@ header {
     gap: 16px;
   }
 
-  #cardapio, .carrinho {
+  #cardapio {
     width: 100%;
   }
 
+  /* Oculta o carrinho por defeito no telemóvel */
   .carrinho {
+    display: none;
+    width: 100%;
+  }
+
+  /* Exibe o carrinho se ele for o destino de navegação (ex: ao clicar na barra) */
+  .carrinho:target {
+    display: flex;
     position: static;
     margin-top: 20px;
   }

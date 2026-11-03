@@ -1,97 +1,133 @@
-// ===== DADOS COMPARTILHADOS (lido pelo cliente e editado pelo painel do desenvolvedor) =====
-const CHAVE = "pizzariaDados";
+// ===== MÓDULO DE DADOS NUVEM (Firebase Firestore Direto) =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Dados iniciais (usados na primeira vez ou ao restaurar o padrão)
-const DADOS_PADRAO = {
-  pizzaria: { nome: "", pixChave: "", pixNome: "", pixCidade: "" },
-  taxaEntrega: 6,
-  prazoPixMinutos: 10,
-  banner: { ativo: true, texto: "" },
-  categorias: ["Pizzas", "Almoço", "Bebidas", "Sobremesas"], 
-  produtos: [
-   ]
+// ⚠️ COLOCA AQUI AS TUAS CREDENCIAIS DO FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCwsLoNbmwTn1uTwt_9Z_sTWufbxLqUzdM",
+  authDomain: "menudeatendimento.firebaseapp.com",
+  projectId: "menudeatendimento",
+  storageBucket: "menudeatendimento.firebasestorage.app",
+  messagingSenderId: "852431378424",
+  appId: "1:852431378424:web:eee5c5b964709509e0280d"
 };
-function carregarDados() {
-  const salvo = localStorage.getItem(CHAVE);
-  if (salvo) {
-    const dadosSalvos = JSON.parse(salvo);
-    // dados antigos (sem imagem): pega a imagem do cardápio padrão
-    dadosSalvos.produtos.forEach(function (p) {
-      // corrige caminho antigo das imagens de exemplo
-      if (p.imagem && p.imagem.startsWith("img/")) p.imagem = "../compartilhado/" + p.imagem;
-      if (p.imagem === undefined) {
-        const padrao = DADOS_PADRAO.produtos.find(x => x.id === p.id);
-        p.imagem = padrao ? padrao.imagem : "";
-      }
-    });
-    return dadosSalvos;
+
+// Inicializa o Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Referência para um único documento na nuvem que guarda todo o sistema
+const docRef = doc(db, "sistema", "cardapio_geral");
+
+const DADOS_PADRAO = {
+  pizzaria: { 
+    nome: "Minha Pizzaria", 
+    pixChave: "", 
+    pixNome: "", 
+    pixCidade: "",
+    whatsapp: "5581999999999"
+  },
+  taxaEntrega: 5.00,
+  prazoPixMinutos: 10,
+  banner: { ativo: false, texto: "" },
+  categorias: ["Pizzas Salgadas", "Pizzas Doces", "Bebidas"],
+  produtos: [
+    {
+      id: 1,
+      nome: "Pizza Calabresa",
+      descricao: "Molho, mussarela e calabresa",
+      categoria: "Pizzas Salgadas",
+      preco: 45.00,
+      desconto: 0,
+      disponivel: true,
+      imagem: ""
+    }
+  ]
+};
+
+// Carrega os dados diretamente da nuvem (acessível por PC e telemóvel)
+export async function carregarDados() {
+  try {
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+      return snapshot.data();
+    } else {
+      // Se não existir na nuvem ainda, cria com os dados padrão
+      await setDoc(docRef, DADOS_PADRAO);
+      return DADOS_PADRAO;
+    }
+  } catch (erro) {
+    console.error("Erro ao carregar da nuvem, a usar padrão local:", erro);
+    return DADOS_PADRAO;
   }
-  return JSON.parse(JSON.stringify(DADOS_PADRAO)); // cópia do padrão
 }
 
-function salvarDados(dados) {
+// Salva as alterações diretamente na nuvem (atualiza o PC e o telemóvel na hora)
+export async function salvarDados(dados) {
   try {
-    localStorage.setItem(CHAVE, JSON.stringify(dados));
+    await setDoc(docRef, dados);
     return true;
   } catch (erro) {
-    alert("Não foi possível salvar: o armazenamento do navegador está cheio. Use imagens menores ou remova algumas.");
+    console.error("Erro ao salvar na nuvem:", erro);
+    alert("Erro ao salvar na nuvem. Verifica a tua conexão.");
     return false;
   }
 }
 
-function resetarDados() {
-  localStorage.removeItem(CHAVE);
+// Restaura os dados para o padrão original na nuvem
+export async function resetarDados() {
+  try {
+    await setDoc(docRef, DADOS_PADRAO);
+    return DADOS_PADRAO;
+  } catch (erro) {
+    console.error("Erro ao resetar dados:", erro);
+    return DADOS_PADRAO;
+  }
 }
 
-// ===== PEDIDOS (guardados separados do cardápio) =====
-const CHAVE_PEDIDOS = "pizzariaPedidos";
-const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+// Gestão de Pedidos na Nuvem
+const docPedidosRef = doc(db, "sistema", "pedidos_geral");
 
-function carregarPedidos() {
-  const salvo = localStorage.getItem(CHAVE_PEDIDOS);
-  return salvo ? JSON.parse(salvo) : [];
-}
-
-function salvarPedidos(lista) {
-  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista));
-}
-
-// Cancela os pedidos com Pix pendente cujo prazo já acabou.
-// Retorna true se algum pedido foi alterado.
-function verificarExpirados() {
-  const pedidos = carregarPedidos();
-  let mudou = false;
-  pedidos.forEach(function (p) {
-    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
-      p.pagamentoStatus = "Expirado";
-      p.status = "Cancelado";
-      mudou = true;
+export async function carregarPedidosNuvem() {
+  try {
+    const snapshot = await getDoc(docPedidosRef);
+    if (snapshot.exists()) {
+      return snapshot.data().lista || [];
     }
-  });
-  if (mudou) salvarPedidos(pedidos);
-  return mudou;
+    return [];
+  } catch (erro) {
+    console.error("Erro ao carregar pedidos:", erro);
+    return [];
+  }
 }
 
-// Transforma milissegundos em "mm:ss"
-function formatarTempo(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const min = String(Math.floor(total / 60)).padStart(2, "0");
-  const seg = String(total % 60).padStart(2, "0");
-  return min + ":" + seg;
+export async function salvarPedidosNuvem(pedidos) {
+  try {
+    await setDoc(docPedidosRef, { lista: pedidos });
+    return true;
+  } catch (erro) {
+    console.error("Erro ao salvar pedidos:", erro);
+    return false;
+  }
 }
 
-// ===== FUNÇÕES AUXILIARES =====
-function precoFinal(produto) {
-  return produto.preco * (1 - produto.desconto / 100);
+// Funções utilitárias
+export function formatarPreco(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Se o produto não tem imagem, mostra uma figura padrão
-function imagemDoProduto(produto) {
-  if (produto.imagem) return produto.imagem;
-  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍽️</text></svg>";
-  return "data:image/svg+xml," + encodeURIComponent(svg);
+export function precoFinal(produto) {
+  const preco = Number(produto.preco || 0);
+  const desconto = Number(produto.desconto || 0);
+  if (desconto > 0) {
+    return preco - (preco * desconto / 100);
+  }
+  return preco;
 }
 
-function formatarPreco(valor) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+export function imagemDoProduto(produto) {
+  if (produto && produto.imagem && produto.imagem.trim() !== "") {
+    return produto.imagem;
+  }
+  return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='9' cy='9' r='2'/><path d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/></svg>";
 }

@@ -75,11 +75,12 @@
 
     <div class="acoes">
       <button class="btn" onclick="salvarAlteracoes()">💾 Salvar alterações</button>
+      <button class="btn" onclick="exportarDados()" style="background: #2e7d32; color: #fff;">📥 Copiar Código do dados.js</button>
       <button class="btn-vermelho" onclick="restaurarPadrao()">Restaurar padrão</button>
     </div>
   </main>
 
-  <script src="../compartilhado/js/dados.js"></script>
-  <script src="js/painel.js"></script>
+  <!-- Script principal carregado corretamente como módulo -->
+  <script type="module" src="js/painel.js"></script>
 </body>
 </html>
