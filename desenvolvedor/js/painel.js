@@ -3,34 +3,40 @@ const SENHA = "admin123"; // simples, só para o projeto (não é segurança rea
 let dados = {}; 
 let novaImagem = ""; // imagem do produto que está sendo cadastrado
 
-// Inicializa carregando os dados da nuvem primeiro
+// ----- Inicializa carregando os dados da nuvem primeiro -----
 async function iniciarPainel() {
   dados = await carregarDados();
   mostrarConfig();
   preencherCategorias();
-  atualizarListaProdutos();
-  atualizarListaPedidos();
+  document.getElementById("novaPreview").src = imagemDoProduto({});
+  mostrarTabela();
+  mostrarPedidos();
+  window.addEventListener("storage", mostrarPedidos);
+  atualizarContagens();
+  setInterval(atualizarContagens, 1000);
 }
 
 // ----- Preenche os campos de configuração -----
 function mostrarConfig() {
   if (!dados || !dados.pizzaria) return;
-  document.getElementById("cfgNome").value = dados.pizzaria.nome;
+  document.getElementById("cfgNome").value = dados.pizzaria.nome || "";
   document.getElementById("cfgPixChave").value = dados.pizzaria.pixChave || "";
-  document.getElementById("cfgPixNome").value = dados.pizzaria.pixNome || dados.pizzaria.nome;
+  document.getElementById("cfgPixNome").value = dados.pizzaria.pixNome || dados.pizzaria.nome || "";
   document.getElementById("cfgPixCidade").value = dados.pizzaria.pixCidade || "";
-  document.getElementById("cfgTaxa").value = dados.taxaEntrega;
+  document.getElementById("cfgTaxa").value = dados.taxaEntrega || 0;
   document.getElementById("cfgPrazoPix").value = dados.prazoPixMinutos || 10;
-  document.getElementById("cfgBannerAtivo").checked = dados.banner.ativo;
-  document.getElementById("cfgBannerTexto").value = dados.banner.texto;
+  
+  const bannerAtivo = document.getElementById("cfgBannerAtivo");
+  if (bannerAtivo) bannerAtivo.checked = dados.banner ? dados.banner.ativo : false;
+  
+  const bannerTexto = document.getElementById("cfgBannerTexto");
+  if (bannerTexto) bannerTexto.value = dados.banner ? dados.banner.texto : "";
 }
-
-// Certifica-te de que chamas o iniciarPainel() no carregamento da página:
-window.addEventListener("DOMContentLoaded", iniciarPainel);
 
 // ----- Preenche o select de categorias do novo produto -----
 function preencherCategorias() {
   const select = document.getElementById("novoCat");
+  if (!select || !dados.categorias) return;
   select.innerHTML = ""; // Limpa para evitar duplicação ou dados antigos
   dados.categorias.forEach(c => {
     select.innerHTML += `<option value="${c}">${c}</option>`;
@@ -40,6 +46,7 @@ function preencherCategorias() {
 // ----- Monta a tabela de produtos -----
 function mostrarTabela() {
   const corpo = document.getElementById("corpoTabela");
+  if (!corpo || !dados.produtos) return;
   corpo.innerHTML = "";
 
   dados.produtos.forEach(function (p) {
@@ -70,6 +77,9 @@ function mostrarTabela() {
 
 // ----- Lê o que foi digitado e atualiza o objeto "dados" -----
 function lerCampos() {
+  if (!dados.pizzaria) dados.pizzaria = {};
+  if (!dados.banner) dados.banner = {};
+
   dados.pizzaria.nome = document.getElementById("cfgNome").value;
   dados.pizzaria.pixChave = document.getElementById("cfgPixChave").value.trim();
   dados.pizzaria.pixNome = document.getElementById("cfgPixNome").value;
@@ -80,117 +90,41 @@ function lerCampos() {
   dados.banner.texto = document.getElementById("cfgBannerTexto").value;
 
   dados.produtos.forEach(function (p) {
-    p.nome = document.getElementById("nome-" + p.id).value;
-    p.descricao = document.getElementById("desc-" + p.id).value;
-    p.categoria = document.getElementById("cat-" + p.id).value;
-    p.preco = Number(document.getElementById("preco-" + p.id).value);
-    p.desconto = Number(document.getElementById("promo-" + p.id).value);
-    p.disponivel = document.getElementById("disp-" + p.id).checked;
+    const nomeEl = document.getElementById("nome-" + p.id);
+    const descEl = document.getElementById("desc-" + p.id);
+    const catEl = document.getElementById("cat-" + p.id);
+    const precoEl = document.getElementById("preco-" + p.id);
+    const promoEl = document.getElementById("promo-" + p.id);
+    const dispEl = document.getElementById("disp-" + p.id);
+
+    if (nomeEl) p.nome = nomeEl.value;
+    if (descEl) p.descricao = descEl.value;
+    if (catEl) p.categoria = catEl.value;
+    if (precoEl) p.preco = Number(precoEl.value);
+    if (promoEl) p.desconto = Number(promoEl.value);
+    if (dispEl) p.disponivel = dispEl.checked;
   });
 }
 
 // ----- Ações dos botões -----
-function salvarAlteracoes() {
+async function salvarAlteracoes() {
   lerCampos();
-  if (salvarDados(dados)) {
-    alert("Alterações salvas no PC! Para atualizar também no telemóvel, clica em 'Copiar Código do dados.js' e atualiza o ficheiro no GitHub.");
+  const sucesso = await salvarDados(dados);
+  if (sucesso) {
+    alert("✅ Alterações salvas com sucesso na nuvem Supabase!");
+  } else {
+    alert("❌ Erro ao salvar na nuvem.");
   }
 }
 
-// NOVO: Gera e copia o código pronto para colar no dados.js
+// Exportar mantido caso necessário para backup em código
 function exportarDados() {
   lerCampos();
-  const codigoExportado = `// ===== DADOS COMPARTILHADOS (Atualizados pelo Painel) =====
-const CHAVE = "pizzariaDados";
-
-const DADOS_PADRAO = ${JSON.stringify(dados, null, 2)};
-
-function carregarDados() {
-  const salvo = localStorage.getItem(CHAVE);
-  if (salvo) {
-    const dadosSalvos = JSON.parse(salvo);
-    if (!dadosSalvos.produtos || dadosSalvos.produtos.length === 0) {
-      dadosSalvos.produtos = DADOS_PADRAO.produtos;
-    }
-    dadosSalvos.produtos.forEach(function (p) {
-      if (p.imagem && p.imagem.startsWith("img/")) p.imagem = "../compartilhado/" + p.imagem;
-      if (p.imagem === undefined) {
-        const padrao = DADOS_PADRAO.produtos.find(x => x.id === p.id);
-        p.imagem = padrao ? padrao.imagem : "";
-      }
-    });
-    return dadosSalvos;
-  }
-  return JSON.parse(JSON.stringify(DADOS_PADRAO));
-}
-
-function salvarDados(dados) {
-  try {
-    localStorage.setItem(CHAVE, JSON.stringify(dados));
-    return true;
-  } catch (erro) {
-    alert("Não foi possível salvar: o armazenamento do navegador está cheio.");
-    return false;
-  }
-}
-
-function resetarDados() {
-  localStorage.removeItem(CHAVE);
-}
-
-// ===== PEDIDOS (guardados separados do cardápio) =====
-const CHAVE_PEDIDOS = "pizzariaPedidos";
-const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
-
-function carregarPedidos() {
-  const salvo = localStorage.getItem(CHAVE_PEDIDOS);
-  return salvo ? JSON.parse(salvo) : [];
-}
-
-function salvarPedidos(lista) {
-  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista));
-}
-
-function verificarExpirados() {
-  const pedidos = carregarPedidos();
-  let mudou = false;
-  pedidos.forEach(function (p) {
-    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
-      p.pagamentoStatus = "Expirado";
-      p.status = "Cancelado";
-      mudou = true;
-    }
-  });
-  if (mudou) salvarPedidos(pedidos);
-  return mudou;
-}
-
-function formatarTempo(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const min = String(Math.floor(total / 60)).padStart(2, "0");
-  const seg = String(total % 60).padStart(2, "0");
-  return min + ":" + seg;
-}
-
-function precoFinal(produto) {
-  return produto.preco * (1 - (produto.desconto || 0) / 100);
-}
-
-function imagemDoProduto(produto) {
-  if (produto.imagem) return produto.imagem;
-  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
-  return "data:image/svg+xml," + encodeURIComponent(svg);
-}
-
-function formatarPreco(valor) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}`;
-
+  const codigoExportado = `const DADOS_PADRAO = ${JSON.stringify(dados, null, 2)};`;
   navigator.clipboard.writeText(codigoExportado).then(() => {
-    alert("✅ Código do dados.js copiado com sucesso para a área de transferência!\n\nAgora basta colares no teu ficheiro 'dados.js' no VS Code e fazeres o git push para atualizar o telemóvel.");
+    alert("✅ Código exportado para a área de transferência!");
   }).catch(err => {
     console.error("Erro ao copiar: ", err);
-    alert("Erro ao copiar automaticamente. Verifique a consola.");
   });
 }
 
@@ -245,14 +179,17 @@ function trocarImagem(id, input) {
   if (!input.files[0]) return;
   processarImagem(input.files[0], function (url) {
     const produto = dados.produtos.find(p => p.id === id);
-    produto.imagem = url;
-    document.getElementById("img-" + id).src = url;
+    if (produto) {
+      produto.imagem = url;
+      document.getElementById("img-" + id).src = url;
+    }
   });
 }
 
 function removerImagem(id) {
-  lerCampos(); // não perde o que já foi editado
-  dados.produtos.find(p => p.id === id).imagem = "";
+  lerCampos(); 
+  const produto = dados.produtos.find(p => p.id === id);
+  if (produto) produto.imagem = "";
   mostrarTabela();
 }
 
@@ -271,10 +208,10 @@ function removerProduto(id) {
   mostrarTabela();
 }
 
-function restaurarPadrao() {
-  if (!confirm("Isso apaga todas as alterações. Continuar?")) return;
-  resetarDados();
-  dados = carregarDados();
+async function restaurarPadrao() {
+  if (!confirm("Isso vai restaurar os dados padrão. Continuar?")) return;
+  dados = JSON.parse(JSON.stringify(DADOS_PADRAO));
+  await salvarDados(dados);
   preencherCategorias();
   mostrarConfig();
   mostrarTabela();
@@ -285,18 +222,23 @@ function mostrarPedidos() {
   verificarExpirados(); // cancela Pix com prazo vencido
   const pedidos = carregarPedidos();
   const corpo = document.getElementById("corpoPedidos");
+  const semPedidos = document.getElementById("semPedidos");
+  if (!corpo) return;
+  
   corpo.innerHTML = "";
-  document.getElementById("semPedidos").style.display = pedidos.length ? "none" : "block";
+  if (semPedidos) semPedidos.style.display = pedidos.length ? "none" : "block";
 
   const qtdPendentes = pedidos.filter(p => p.pagamentoStatus === "Pendente" && p.status !== "Cancelado").length;
   const aviso = document.getElementById("resumoPendentes");
-  aviso.textContent = qtdPendentes > 0 ? `⏳ ${qtdPendentes} pedido(s) com pagamento Pix pendente` : "";
-  aviso.style.display = qtdPendentes > 0 ? "block" : "none";
+  if (aviso) {
+    aviso.textContent = qtdPendentes > 0 ? `⏳ ${qtdPendentes} pedido(s) com pagamento Pix pendente` : "";
+    aviso.style.display = qtdPendentes > 0 ? "block" : "none";
+  }
 
   pedidos.slice().reverse().forEach(function (p) {
-    let itens = p.itens.map(i => `${i.qtd}x ${i.nome}`).join("<br>");
+    let itens = p.itens ? p.itens.map(i => `${i.qtd}x ${i.nome}`).join("<br>") : "";
     const pendente = p.pagamentoStatus === "Pendente" && p.status !== "Cancelado";
-    let pagHtml = p.pagamento;
+    let pagHtml = p.pagamento || "";
     if (pendente) {
       pagHtml += `<br><span class="badge badge-pendente">⏳ Pagamento pendente<span class="contagem" data-expira="${p.expiraEm || ""}"></span></span>
                   <br><button class="btn-pequeno btn-confirmar" onclick="confirmarPagamento(${p.numero})">Confirmar pagamento</button>`;
@@ -329,13 +271,13 @@ function mudarStatus(numero, novoStatus) {
   const pedido = pedidos.find(p => p.numero === numero);
   const avancando = ["Em preparo", "Saiu para entrega", "Entregue"].includes(novoStatus);
 
-  if (pedido.pagamentoStatus === "Pendente" && avancando) {
+  if (pedido && pedido.pagamentoStatus === "Pendente" && avancando) {
     if (!confirm("O pagamento Pix deste pedido ainda está PENDENTE. Deseja continuar mesmo assim?")) {
       mostrarPedidos();
       return;
     }
   }
-  pedido.status = novoStatus;
+  if (pedido) pedido.status = novoStatus;
   salvarPedidos(pedidos);
   mostrarPedidos();
 }
@@ -343,7 +285,8 @@ function mudarStatus(numero, novoStatus) {
 function confirmarPagamento(numero) {
   if (!confirm("Confirma que o Pix do pedido #" + numero + " foi recebido?")) return;
   const pedidos = carregarPedidos();
-  pedidos.find(p => p.numero === numero).pagamentoStatus = "Pago";
+  const pedido = pedidos.find(p => p.numero === numero);
+  if (pedido) pedido.pagamentoStatus = "Pago";
   salvarPedidos(pedidos);
   mostrarPedidos();
 }
@@ -359,20 +302,9 @@ function atualizarContagens() {
   });
 }
 
-// ----- Início (pede a senha) -----
-function iniciar() {
-  preencherCategorias();
-  document.getElementById("novaPreview").src = imagemDoProduto({});
-  mostrarConfig();
-  mostrarTabela();
-  mostrarPedidos();
-  window.addEventListener("storage", mostrarPedidos);
-  atualizarContagens();
-  setInterval(atualizarContagens, 1000);
-}
-
+// ----- Execução ao carregar a página com verificação de senha -----
 if (prompt("Senha do desenvolvedor:") === SENHA) {
-  iniciar();
+  window.addEventListener("DOMContentLoaded", iniciarPainel);
 } else {
   document.body.innerHTML = "<h2 style='padding:20px'>Acesso negado.</h2>";
 }
