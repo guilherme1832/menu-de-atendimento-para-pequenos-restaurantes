@@ -1,148 +1,116 @@
-// ===== MÓDULO DE DADOS NUVEM (Supabase Realtime) =====
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+// ===== DADOS COMPARTILHADOS (lido pelo cliente e editado pelo painel do desenvolvedor) =====
+const CHAVE = "pizzariaDados";
 
-// Credenciais do Supabase configuradas
-const SUPABASE_URL = 'https://amzfsqstrogqrvgmhtxb.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_z5plbE-ChWuz-lh1Kxzo4g_IaA34-Fk';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
+// Dados iniciais (Altere aqui as suas pizzas e produtos para aparecerem no telemóvel!)
 const DADOS_PADRAO = {
-  pizzaria: { 
-    nome: "Minha Pizzaria", 
-    pixChave: "", 
-    pixNome: "", 
-    pixCidade: "",
-    whatsapp: "5581999999999"
-  },
-  taxaEntrega: 5.00,
+  pizzaria: { nome: "Restaurante do Bode", pixChave: "", pixNome: "", pixCidade: "" },
+  taxaEntrega: 6,
   prazoPixMinutos: 10,
-  banner: { ativo: false, texto: "" },
-  categorias: ["Pizzas Salgadas", "Pizzas Doces", "Bebidas"],
+  banner: { ativo: true, texto: "Bem-vindo ao nosso atendimento online!" },
+  categorias: ["Pizzas", "Almoço", "Bebidas", "Sobremesas"], 
   produtos: [
     {
       id: 1,
-      nome: "Pizza Calabresa",
-      descricao: "Molho, mussarela e calabresa",
-      categoria: "Pizzas Salgadas",
-      preco: 45.00,
+      nome: "Pizza de Calabresa",
+      descricao: "Molho de tomate, muçarela, calabresa fatiada e cebola.",
+      preco: 35.00,
       desconto: 0,
       disponivel: true,
+      categoria: "Pizzas",
+      imagem: ""
+    },
+    {
+      id: 2,
+      nome: "Pizza Quatro Queijos",
+      descricao: "Muçarela, gorgonzola, parmesão e provolone.",
+      preco: 42.00,
+      desconto: 0,
+      disponivel: true,
+      categoria: "Pizzas",
       imagem: ""
     }
   ]
 };
 
-// Carrega os dados diretamente da nuvem
-export async function carregarDados() {
-  try {
-    const { data, error } = await supabase
-      .from('dados_pizzaria')
-      .select('*')
-      .eq('id', 'principal')
-      .single();
-    
-    if (error || !data) {
-      // Se não existir na nuvem ainda, cria com os dados padrão
-      await salvarDados(DADOS_PADRAO);
-      return DADOS_PADRAO;
+function carregarDados() {
+  const salvo = localStorage.getItem(CHAVE);
+  if (salvo) {
+    const dadosSalvos = JSON.parse(salvo);
+    // Se o painel guardou dados mas a lista de produtos estiver vazia, usa o padrão
+    if (!dadosSalvos.produtos || dadosSalvos.produtos.length === 0) {
+      dadosSalvos.produtos = DADOS_PADRAO.produtos;
     }
-    return data.conteudo;
-  } catch (erro) {
-    console.error("Erro ao carregar da nuvem, a usar padrão local:", erro);
-    return DADOS_PADRAO;
-  }
-}
-
-// Salva as alterações diretamente na nuvem
-export async function salvarDados(dados) {
-  try {
-    const { error } = await supabase
-      .from('dados_pizzaria')
-      .upsert({ id: 'principal', conteudo: dados, atualizado_em: new Date() });
-    
-    if (error) throw error;
-    return true;
-  } catch (erro) {
-    console.error("Erro ao salvar na nuvem:", erro);
-    alert("Erro ao salvar na nuvem. Verifica a tua conexão.");
-    return false;
-  }
-}
-
-// Restaura os dados para o padrão original na nuvem
-export async function resetarDados() {
-  try {
-    await salvarDados(DADOS_PADRAO);
-    return DADOS_PADRAO;
-  } catch (erro) {
-    console.error("Erro ao resetar dados:", erro);
-    return DADOS_PADRAO;
-  }
-}
-
-// Gestão de Pedidos na Nuvem
-export async function carregarPedidosNuvem() {
-  try {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .select('*')
-      .eq('id', 'pedidos_geral')
-      .single();
-    
-    if (error || !data) {
-      return [];
-    }
-    return data.conteudo.lista || [];
-  } catch (erro) {
-    console.error("Erro ao carregar pedidos:", erro);
-    return [];
-  }
-}
-
-export async function salvarPedidosNuvem(pedidos) {
-  try {
-    const { error } = await supabase
-      .from('pedidos')
-      .upsert({ id: 'pedidos_geral', conteudo: { lista: pedidos }, criado_em: new Date() });
-    
-    if (error) throw error;
-    return true;
-  } catch (erro) {
-    console.error("Erro ao salvar pedidos:", erro);
-    return false;
-  }
-}
-
-// Opcional: Escutar novos pedidos em tempo real (caso queiras usar no painel)
-export function escutarPedidosNuvem(callback) {
-  return supabase
-    .channel('public:pedidos')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
-      if (payload.new && payload.new.conteudo) {
-        callback(payload.new.conteudo.lista || []);
+    dadosSalvos.produtos.forEach(function (p) {
+      if (p.imagem && p.imagem.startsWith("img/")) p.imagem = "../compartilhado/" + p.imagem;
+      if (p.imagem === undefined) {
+        const padrao = DADOS_PADRAO.produtos.find(x => x.id === p.id);
+        p.imagem = padrao ? padrao.imagem : "";
       }
-    })
-    .subscribe();
-}
-
-// Funções utilitárias (mantidas idênticas ao original)
-export function formatarPreco(valor) {
-  return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-export function precoFinal(produto) {
-  const preco = Number(produto.preco || 0);
-  const desconto = Number(produto.desconto || 0);
-  if (desconto > 0) {
-    return preco - (preco * desconto / 100);
+    });
+    return dadosSalvos;
   }
-  return preco;
+  // Se não houver nada no localStorage (como no telemóvel), retorna os dados padrão com as pizzas!
+  return JSON.parse(JSON.stringify(DADOS_PADRAO));
 }
 
-export function imagemDoProduto(produto) {
-  if (produto && produto.imagem && produto.imagem.trim() !== "") {
-    return produto.imagem;
+function salvarDados(dados) {
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(dados));
+    return true;
+  } catch (erro) {
+    alert("Não foi possível salvar: o armazenamento do navegador está cheio.");
+    return false;
   }
-  return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><circle cx='9' cy='9' r='2'/><path d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/></svg>";
+}
+
+function resetarDados() {
+  localStorage.removeItem(CHAVE);
+}
+
+// ===== PEDIDOS (guardados separados do cardápio) =====
+const CHAVE_PEDIDOS = "pizzariaPedidos";
+const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
+
+function carregarPedidos() {
+  const salvo = localStorage.getItem(CHAVE_PEDIDOS);
+  return salvo ? JSON.parse(salvo) : [];
+}
+
+function salvarPedidos(lista) {
+  localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista));
+}
+
+function verificarExpirados() {
+  const pedidos = carregarPedidos();
+  let mudou = false;
+  pedidos.forEach(function (p) {
+    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
+      p.pagamentoStatus = "Expirado";
+      p.status = "Cancelado";
+      mudou = true;
+    }
+  });
+  if (mudou) salvarPedidos(pedidos);
+  return mudou;
+}
+
+function formatarTempo(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const min = String(Math.floor(total / 60)).padStart(2, "0");
+  const seg = String(total % 60).padStart(2, "0");
+  return min + ":" + seg;
+}
+
+function precoFinal(produto) {
+  return produto.preco * (1 - (produto.desconto || 0) / 100);
+}
+
+function imagemDoProduto(produto) {
+  if (produto.imagem) return produto.imagem;
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
+function formatarPreco(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
