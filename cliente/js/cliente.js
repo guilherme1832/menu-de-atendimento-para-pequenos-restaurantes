@@ -258,10 +258,10 @@ function mostrarTelaPix(pedido) {
 
         <button class="btn-vermelho" onclick="cancelarPix(${pedido.numero})" style="margin-top: 15px; width: 100%;">Cancelar / Voltar</button>
       </div>
+    `;
   }
 
   iniciarVerificacaoStatus(pedido.numero);
-    `;
 }
 
 function copiarChavePix() {
@@ -345,19 +345,3 @@ function enviarParaWhatsApp(nome, telefone, endereco, tipoEntrega, formaPagament
   carrinho.forEach(function (item) {
     const p = dados.produtos.find(prod => prod.id === item.id);
     if (!p) return;
-    const totalItem = precoFinal(p) * item.qtd;
-    mensagem += `• ${item.qtd}x ${p.nome} - ${formatarPreco(totalItem)}\n`;
-  });
-
-  mensagem += `\n📦 Subtotal: ${formatarPreco(subtotal)}\n`;
-  mensagem += `🚚 Entrega: ${formatarPreco(taxaAtual)}\n`;
-  mensagem += `💰 *TOTAL: ${formatarPreco(totalGeral)}*`;
-
-  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5581986379426"; 
-  const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
-
-  window.open(urlWhatsApp, "_blank");
-}
-
-// ----- Executa a inicialização ao carregar a página -----
-window.addEventListener("DOMContentLoaded", iniciarCliente);
