@@ -1,8 +1,6 @@
 // ===== SUPABASE CONFIGURAÇÃO =====
-const SUPABASE_URL = "https://amzfsqstrogqrvgmhtxb.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://amzfsqstroggrvgmhtxb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_z5plbE-ChWuz-lh1Kxzo4g_IaA34-Fk";
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const CHAVE_LOCAL = "pizzariaDados";
 
@@ -24,14 +22,24 @@ const DADOS_PADRAO = {
 // Carrega os dados diretamente da nuvem Supabase
 async function carregarDados() {
   try {
-    const { data, error } = await supabaseClient
-      .from('configuracoes')
-      .select('dados')
-      .eq('id', 1)
-      .single();
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?id=eq.1&select=dados`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-    if (error || !data || !data.dados) {
-      console.warn("A usar cache local/padrão devido a erro no Supabase:", error);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const data = result[0];
+
+    if (!data || !data.dados) {
+      console.warn("A usar cache local/padrão devido a dados vazios.");
       const local = localStorage.getItem(CHAVE_LOCAL);
       return local ? JSON.parse(local) : DADOS_PADRAO;
     }
@@ -48,13 +56,20 @@ async function carregarDados() {
 // Salva as alterações instantaneamente na nuvem
 async function salvarDados(dadosAtualizados) {
   try {
-    const { error } = await supabaseClient
-      .from('configuracoes')
-      .update({ dados: dadosAtualizados })
-      .eq('id', 1);
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ dados: dadosAtualizados })
+    });
 
-    if (error) {
-      alert("Erro ao guardar na nuvem: " + error.message);
+    if (!response.ok) {
+      const errText = await response.text();
+      alert("Erro ao guardar na nuvem: " + errText);
       return false;
     }
 
