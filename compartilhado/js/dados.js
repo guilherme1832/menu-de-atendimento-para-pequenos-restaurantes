@@ -4,12 +4,12 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 
 // ⚠️ COLOCA AQUI AS TUAS CREDENCIAIS DO FIREBASE
 const firebaseConfig = {
-  apiKey: "AIzaSyCwsLoNbmwTn1uTwt_9Z_sTWufbxLqUzdM",
+  apiKey: "AIzaSyDnXzbBM_0tCvw3jRvchIH1Fyf1PEZj7EU",
   authDomain: "menudeatendimento.firebaseapp.com",
   projectId: "menudeatendimento",
   storageBucket: "menudeatendimento.firebasestorage.app",
   messagingSenderId: "852431378424",
-  appId: "1:852431378424:web:eee5c5b964709509e0280d"
+  appId: "1:852431378424:web:edbe1d2bee04dffee0280d"
 };
 
 // Inicializa o Firebase
