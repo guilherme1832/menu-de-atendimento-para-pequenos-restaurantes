@@ -1,20 +1,32 @@
 // ===== TELA DO CLIENTE =====
-const dados = carregarDados();
+let dados = {}; // Começa vazio para ser preenchido pela nuvem
 let carrinho = []; // lista de { id, qtd }
+
+// ----- Inicialização assíncrona -----
+async function iniciarCliente() {
+  dados = await carregarDados(); // Aguarda os dados chegarem do Supabase
+  mostrarCardapio();
+  mostrarCarrinho();
+}
 
 // ----- Cardápio -----
 function mostrarCardapio() {
+  if (!dados || !dados.pizzaria) return;
   document.getElementById("nomePizzaria").textContent = dados.pizzaria.nome;
 
   const banner = document.getElementById("banner");
-  if (dados.banner.ativo && dados.banner.texto) {
+  if (dados.banner && dados.banner.ativo && dados.banner.texto) {
     banner.textContent = dados.banner.texto;
-  } else {
+    banner.style.display = "block";
+  } else if (banner) {
     banner.style.display = "none";
   }
 
   const area = document.getElementById("cardapio");
+  if (!area) return;
   area.innerHTML = "";
+
+  if (!dados.categorias || !dados.produtos) return;
 
   dados.categorias.forEach(function (cat) {
     const itens = dados.produtos.filter(p => p.categoria === cat && p.disponivel);
@@ -54,6 +66,7 @@ function adicionar(id) {
 
 function alterarQtd(id, mudanca) {
   const item = carrinho.find(i => i.id === id);
+  if (!item) return;
   item.qtd += mudanca;
   if (item.qtd <= 0) carrinho = carrinho.filter(i => i.id !== id);
   mostrarCarrinho();
@@ -63,7 +76,7 @@ function calcularSubtotal() {
   let total = 0;
   carrinho.forEach(function (item) {
     const p = dados.produtos.find(prod => prod.id === item.id);
-    total += precoFinal(p) * item.qtd;
+    if (p) total += precoFinal(p) * item.qtd;
   });
   return total;
 }
@@ -74,7 +87,7 @@ function obterTaxaEntrega() {
   if (tipoSelect && tipoSelect.value === "retirada") {
     return 0;
   }
-  return dados.taxaEntrega;
+  return dados.taxaEntrega || 0;
 }
 
 // Controla o comportamento ao mudar entre Entrega e Retirada
@@ -95,6 +108,7 @@ function atualizarTipoEntrega() {
 // Barra fixa no rodapé (só aparece no celular, via CSS)
 function atualizarBarra() {
   const barra = document.getElementById("barraCarrinho");
+  if (!barra) return;
   let qtd = 0;
   carrinho.forEach(item => qtd += item.qtd);
 
@@ -113,16 +127,19 @@ function atualizarBarra() {
 function mostrarCarrinho() {
   atualizarBarra();
   const lista = document.getElementById("itensCarrinho");
+  const totaisEl = document.getElementById("totais");
+  if (!lista) return;
   lista.innerHTML = "";
 
   if (carrinho.length === 0) {
     lista.innerHTML = "<p>Seu carrinho está vazio.</p>";
-    document.getElementById("totais").style.display = "none";
+    if (totaisEl) totaisEl.style.display = "none";
     return;
   }
 
   carrinho.forEach(function (item) {
     const p = dados.produtos.find(prod => prod.id === item.id);
+    if (!p) return;
     lista.innerHTML += `
       <div class="linha-carrinho">
         <span>${p.nome}</span>
@@ -138,7 +155,7 @@ function mostrarCarrinho() {
   const subtotal = calcularSubtotal();
   const taxa = obterTaxaEntrega();
 
-  document.getElementById("totais").style.display = "block";
+  if (totaisEl) totaisEl.style.display = "block";
   document.getElementById("subtotal").textContent = formatarPreco(subtotal);
   document.getElementById("entrega").textContent = formatarPreco(taxa);
   document.getElementById("total").textContent = formatarPreco(subtotal + taxa);
@@ -164,7 +181,6 @@ function finalizarPedido() {
   const taxaAtual = obterTaxaEntrega();
   const totalGeral = subtotal + taxaAtual;
 
-  // Monta a mensagem formatada para o WhatsApp
   let mensagem = `🍕 *NOVO PEDIDO* 🍕\n\n`;
   mensagem += `👤 *Cliente:* ${nome}\n`;
   mensagem += `📞 *Telefone:* ${telefone}\n`;
@@ -180,6 +196,7 @@ function finalizarPedido() {
   mensagem += `\n🛒 *ITENS DO PEDIDO:*\n`;
   carrinho.forEach(function (item) {
     const p = dados.produtos.find(prod => prod.id === item.id);
+    if (!p) return;
     const totalItem = precoFinal(p) * item.qtd;
     mensagem += `• ${item.qtd}x ${p.nome} - ${formatarPreco(totalItem)}\n`;
   });
@@ -188,16 +205,11 @@ function finalizarPedido() {
   mensagem += `🚚 Entrega: ${formatarPreco(taxaAtual)}\n`;
   mensagem += `💰 *TOTAL: ${formatarPreco(totalGeral)}*`;
 
-  // Substitui pelo número de WhatsApp do restaurante (insere o teu número com o DDD, ex: 5511999999999)
-  // Podes puxar dinamicamente das configurações se quiseres, ou colocar fixo aqui:
-  const numeroWhatsApp = dados.pizzaria.whatsapp || "5511999999999"; 
-
+  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5511999999999"; 
   const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
-  // Abre o WhatsApp com a mensagem pronta
   window.open(urlWhatsApp, "_blank");
 }
 
-// ----- Início -----
-mostrarCardapio();
-mostrarCarrinho();
+// ----- Executa a inicialização ao carregar a página -----
+window.addEventListener("DOMContentLoaded", iniciarCliente);
