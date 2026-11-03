@@ -31,7 +31,7 @@ function gerarPix(chave, nome, cidade, valor, idPedido) {
     campoPix("00", "01") +
     campoPix("26", conta) +
     campoPix("52", "0000") +
-    campoPix("53", "986") +                       // 986 = Real
+    campoPix("53", "986") +                         // 986 = Real
     campoPix("54", valor.toFixed(2)) +
     campoPix("58", "BR") +
     campoPix("59", semAcento(nome).substring(0, 25)) +
