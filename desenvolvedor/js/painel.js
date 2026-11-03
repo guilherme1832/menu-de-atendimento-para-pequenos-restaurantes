@@ -1,10 +1,20 @@
 // ===== TELA DO DESENVOLVEDOR (ADMIN) =====
 const SENHA = "admin123"; // simples, só para o projeto (não é segurança real)
-let dados = carregarDados();
+let dados = {}; 
 let novaImagem = ""; // imagem do produto que está sendo cadastrado
+
+// Inicializa carregando os dados da nuvem primeiro
+async function iniciarPainel() {
+  dados = await carregarDados();
+  mostrarConfig();
+  preencherCategorias();
+  atualizarListaProdutos();
+  atualizarListaPedidos();
+}
 
 // ----- Preenche os campos de configuração -----
 function mostrarConfig() {
+  if (!dados || !dados.pizzaria) return;
   document.getElementById("cfgNome").value = dados.pizzaria.nome;
   document.getElementById("cfgPixChave").value = dados.pizzaria.pixChave || "";
   document.getElementById("cfgPixNome").value = dados.pizzaria.pixNome || dados.pizzaria.nome;
@@ -14,6 +24,9 @@ function mostrarConfig() {
   document.getElementById("cfgBannerAtivo").checked = dados.banner.ativo;
   document.getElementById("cfgBannerTexto").value = dados.banner.texto;
 }
+
+// Certifica-te de que chamas o iniciarPainel() no carregamento da página:
+window.addEventListener("DOMContentLoaded", iniciarPainel);
 
 // ----- Preenche o select de categorias do novo produto -----
 function preencherCategorias() {
