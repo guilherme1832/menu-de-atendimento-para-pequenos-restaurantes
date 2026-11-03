@@ -1,73 +1,86 @@
-// ===== DADOS COMPARTILHADOS (lido pelo cliente e editado pelo painel do desenvolvedor) =====
-const CHAVE = "pizzariaDados";
+// ===== SUPABASE CONFIGURAÇÃO =====
+const SUPABASE_URL = "https://amzfsqstroggrvgmhtxb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_z5plbE-ChWuz-lh1Kxzo4g_IaA34-Fk";
 
-// Dados iniciais (Altere aqui as suas pizzas e produtos para aparecerem no telemóvel!)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CHAVE_LOCAL = "pizzariaDados";
+
 const DADOS_PADRAO = {
-  pizzaria: { nome: "Restaurante do Bode", pixChave: "", pixNome: "", pixCidade: "" },
-  taxaEntrega: 6,
-  prazoPixMinutos: 10,
-  banner: { ativo: true, texto: "Bem-vindo ao nosso atendimento online!" },
-  categorias: ["Pizzas", "Almoço", "Bebidas", "Sobremesas"], 
-  produtos: [
-    {
-      id: 1,
-      nome: "Pizza de Calabresa",
-      descricao: "Molho de tomate, muçarela, calabresa fatiada e cebola.",
-      preco: 35.00,
-      desconto: 0,
-      disponivel: true,
-      categoria: "Pizzas",
-      imagem: ""
-    },
-    {
-      id: 2,
-      nome: "Pizza Quatro Queijos",
-      descricao: "Muçarela, gorgonzola, parmesão e provolone.",
-      preco: 42.00,
-      desconto: 0,
-      disponivel: true,
-      categoria: "Pizzas",
-      imagem: ""
-    }
-  ]
+  "pizzaria": {
+    "nome": "Minha Pizzaria",
+    "pixChave": "",
+    "pixNome": "",
+    "pixCidade": "",
+    "whatsapp": "5581999999999"
+  },
+  "taxaEntrega": 5.00,
+  "prazoPixMinutos": 10,
+  "banner": { "ativo": false, "texto": "" },
+  "categorias": ["Pizzas Salgadas", "Pizzas Doces", "Bebidas"],
+  "produtos": []
 };
 
-function carregarDados() {
-  const salvo = localStorage.getItem(CHAVE);
-  if (salvo) {
-    const dadosSalvos = JSON.parse(salvo);
-    // Se o painel guardou dados mas a lista de produtos estiver vazia, usa o padrão
-    if (!dadosSalvos.produtos || dadosSalvos.produtos.length === 0) {
-      dadosSalvos.produtos = DADOS_PADRAO.produtos;
+// Carrega os dados diretamente da nuvem Supabase
+async function carregarDados() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('configuracoes')
+      .select('dados')
+      .eq('id', 1)
+      .single();
+
+    if (error || !data) {
+      console.warn("A usar cache local/padrão devido a erro:", error);
+      const local = localStorage.getItem(CHAVE_LOCAL);
+      return local ? JSON.parse(local) : DADOS_PADRAO;
     }
-    dadosSalvos.produtos.forEach(function (p) {
-      if (p.imagem && p.imagem.startsWith("img/")) p.imagem = "../compartilhado/" + p.imagem;
-      if (p.imagem === undefined) {
-        const padrao = DADOS_PADRAO.produtos.find(x => x.id === p.id);
-        p.imagem = padrao ? padrao.imagem : "";
-      }
-    });
-    return dadosSalvos;
+
+    localStorage.setItem(CHAVE_LOCAL, JSON.stringify(data.dados));
+    return data.dados;
+  } catch (err) {
+    console.error("Erro na ligação ao Supabase:", err);
+    return DADOS_PADRAO;
   }
-  // Se não houver nada no localStorage (como no telemóvel), retorna os dados padrão com as pizzas!
-  return JSON.parse(JSON.stringify(DADOS_PADRAO));
 }
 
-function salvarDados(dados) {
+// Salva as alterações instantaneamente na nuvem
+async function salvarDados(dadosAtualizados) {
   try {
-    localStorage.setItem(CHAVE, JSON.stringify(dados));
+    const { error } = await supabaseClient
+      .from('configuracoes')
+      .update({ dados: dadosAtualizados })
+      .eq('id', 1);
+
+    if (error) {
+      alert("Erro ao guardar na nuvem: " + error.message);
+      return false;
+    }
+
+    localStorage.setItem(CHAVE_LOCAL, JSON.stringify(dadosAtualizados));
     return true;
-  } catch (erro) {
-    alert("Não foi possível salvar: o armazenamento do navegador está cheio.");
+  } catch (err) {
+    console.error("Erro ao guardar:", err);
     return false;
   }
 }
 
-function resetarDados() {
-  localStorage.removeItem(CHAVE);
+// Funções utilitárias
+function precoFinal(produto) {
+  return produto.preco * (1 - (produto.desconto || 0) / 100);
 }
 
-// ===== PEDIDOS (guardados separados do cardápio) =====
+function imagemDoProduto(produto) {
+  if (produto.imagem) return produto.imagem;
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
+function formatarPreco(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// ===== PEDIDOS LOCAL =====
 const CHAVE_PEDIDOS = "pizzariaPedidos";
 const STATUS_PEDIDO = ["Recebido", "Em preparo", "Saiu para entrega", "Entregue", "Cancelado"];
 
@@ -99,18 +112,4 @@ function formatarTempo(ms) {
   const min = String(Math.floor(total / 60)).padStart(2, "0");
   const seg = String(total % 60).padStart(2, "0");
   return min + ":" + seg;
-}
-
-function precoFinal(produto) {
-  return produto.preco * (1 - (produto.desconto || 0) / 100);
-}
-
-function imagemDoProduto(produto) {
-  if (produto.imagem) return produto.imagem;
-  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' font-size='60' text-anchor='middle' dominant-baseline='middle'>🍕</text></svg>";
-  return "data:image/svg+xml," + encodeURIComponent(svg);
-}
-
-function formatarPreco(valor) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
