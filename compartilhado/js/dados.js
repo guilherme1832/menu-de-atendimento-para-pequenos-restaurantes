@@ -39,7 +39,6 @@ async function carregarDados() {
     const data = result[0];
 
     if (!data || !data.dados) {
-      console.warn("A usar cache local/padrão devido a dados vazios.");
       const local = localStorage.getItem(CHAVE_LOCAL);
       return local ? JSON.parse(local) : DADOS_PADRAO;
     }
