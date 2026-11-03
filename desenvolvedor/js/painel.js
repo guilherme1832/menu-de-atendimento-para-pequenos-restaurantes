@@ -128,7 +128,8 @@ function exportarDados() {
   });
 }
 
-function adicionarProduto() {
+// ----- Adicionar Produto (Atualiza e salva na nuvem instantaneamente) -----
+async function adicionarProduto() {
   lerCampos(); // não perde o que já foi editado
   const nome = document.getElementById("novoNome").value.trim();
   const preco = Number(document.getElementById("novoPreco").value);
@@ -151,6 +152,9 @@ function adicionarProduto() {
   document.getElementById("novoDesc").value = "";
   document.getElementById("novoPreco").value = "";
   mostrarTabela();
+
+  // Salva imediatamente na nuvem Supabase
+  await salvarDados(dados);
 }
 
 // ----- Imagens -----
@@ -201,11 +205,15 @@ function escolherNovaImagem(input) {
   });
 }
 
-function removerProduto(id) {
+// ----- Excluir Produto (Atualiza e remove da nuvem instantaneamente) -----
+async function removerProduto(id) {
   if (!confirm("Excluir este produto?")) return;
   lerCampos();
   dados.produtos = dados.produtos.filter(p => p.id !== id);
   mostrarTabela();
+  
+  // Salva imediatamente na nuvem Supabase
+  await salvarDados(dados);
 }
 
 async function restaurarPadrao() {
