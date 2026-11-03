@@ -10,7 +10,13 @@ async function iniciarPainel() {
   preencherCategorias();
   document.getElementById("novaPreview").src = imagemDoProduto({});
   mostrarTabela();
-  mostrarPedidos();
+  await mostrarPedidos();
+  
+  // Atualiza os pedidos da nuvem automaticamente a cada 5 segundos
+  setInterval(async () => {
+    await mostrarPedidos();
+  }, 5000);
+
   window.addEventListener("storage", mostrarPedidos);
   atualizarContagens();
   setInterval(atualizarContagens, 1000);
@@ -228,10 +234,21 @@ async function restaurarPadrao() {
   mostrarTabela();
 }
 
-// ----- Pedidos -----
-function mostrarPedidos() {
-  verificarExpirados(); // cancela Pix com prazo vencido
-  const pedidos = carregarPedidos();
+// ----- Pedidos na Nuvem -----
+async function mostrarPedidos() {
+  let pedidos = await carregarPedidosNuvem();
+  
+  // Verifica se algum pedido Pix expirou
+  let mudou = false;
+  pedidos.forEach(function (p) {
+    if (p.pagamentoStatus === "Pendente" && p.expiraEm && Date.now() > p.expiraEm) {
+      p.pagamentoStatus = "Expirado";
+      p.status = "Cancelado";
+      mudou = true;
+    }
+  });
+  if (mudou) await salvarPedidosNuvem(pedidos);
+
   const corpo = document.getElementById("corpoPedidos");
   const semPedidos = document.getElementById("semPedidos");
   if (!corpo) return;
@@ -277,29 +294,32 @@ function mostrarPedidos() {
   });
 }
 
-function mudarStatus(numero, novoStatus) {
-  const pedidos = carregarPedidos();
+async function mudarStatus(numero, novoStatus) {
+  let pedidos = await carregarPedidosNuvem();
   const pedido = pedidos.find(p => p.numero === numero);
   const avancando = ["Em preparo", "Saiu para entrega", "Entregue"].includes(novoStatus);
 
   if (pedido && pedido.pagamentoStatus === "Pendente" && avancando) {
     if (!confirm("O pagamento Pix deste pedido ainda está PENDENTE. Deseja continuar mesmo assim?")) {
-      mostrarPedidos();
+      await mostrarPedidos();
       return;
     }
   }
   if (pedido) pedido.status = novoStatus;
-  salvarPedidos(pedidos);
-  mostrarPedidos();
+  await salvarPedidosNuvem(pedidos);
+  await mostrarPedidos();
 }
 
-function confirmarPagamento(numero) {
+async function confirmarPagamento(numero) {
   if (!confirm("Confirma que o Pix do pedido #" + numero + " foi recebido?")) return;
-  const pedidos = carregarPedidos();
+  let pedidos = await carregarPedidosNuvem();
   const pedido = pedidos.find(p => p.numero === numero);
-  if (pedido) pedido.pagamentoStatus = "Pago";
-  salvarPedidos(pedidos);
-  mostrarPedidos();
+  if (pedido) {
+    pedido.pagamentoStatus = "Pago";
+    pedido.status = "Em preparo"; // Passa automaticamente para em preparo ao confirmar o Pix
+  }
+  await salvarPedidosNuvem(pedidos);
+  await mostrarPedidos();
 }
 
 function atualizarContagens() {
