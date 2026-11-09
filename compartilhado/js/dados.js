@@ -15,7 +15,7 @@ const DADOS_PADRAO = {
   "taxaEntrega": 5.00,
   "prazoPixMinutos": 10,
   "banner": { "ativo": false, "texto": "" },
-  "categorias": ["Pizzas", "Bebidas", "Almoço", "Sobre-Mesa"],
+  "categorias": ["Pizzas", "Almoços", "Bebidas", "Sobre-Mesa"],
   "produtos": []
 };
 
