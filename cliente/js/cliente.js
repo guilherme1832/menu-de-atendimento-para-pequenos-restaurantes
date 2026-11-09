@@ -296,12 +296,38 @@ function iniciarVerificacaoStatus(numeroPedido) {
 
     if (pedido.pagamentoStatus === "Pago" || pedido.status !== "Aguardando Pagamento") {
       clearInterval(intervalo);
-      alert("✅ Pagamento confirmado com sucesso! A redirecionar para o WhatsApp...");
       
+      // Limpa o carrinho
       carrinho = [];
-      dispararWhatsAppFinal(pedido);
+      
+      // Chama a função que cria o botão na tela em vez de redirecionar automaticamente
+      mostrarBotaoWhatsApp(pedido);
     }
   }, 3000);
+}
+
+// Nova função que muda a tela do QR Code para a tela de Sucesso com o botão
+function mostrarBotaoWhatsApp(pedido) {
+  const areaConfirmacao = document.getElementById("areaConfirmacao");
+  if (!areaConfirmacao) return;
+
+  // Atualiza o HTML da área de pagamento para mostrar o botão
+  areaConfirmacao.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <h2 style="color: #28a745;">✅ Pagamento Confirmado!</h2>
+      <p>O seu Pix foi recebido com sucesso pelo estabelecimento.</p>
+      <p style="margin-top: 15px; font-weight: bold;">Clique no botão abaixo para nos enviar o comprovante e o seu pedido para o WhatsApp:</p>
+      
+      <button id="btnZapFinal" class="btn" style="margin-top: 20px; width: 100%; background-color: #25D366; color: white; font-size: 18px; padding: 15px; border-radius: 8px; border: none; cursor: pointer;">
+        📱 Enviar pedido para o WhatsApp
+      </button>
+    </div>
+  `;
+
+  // Quando o cliente clicar no botão, dispara a mensagem e recarrega a página
+  document.getElementById("btnZapFinal").addEventListener("click", () => {
+     dispararWhatsAppFinal(pedido);
+  });
 }
 
 function dispararWhatsAppFinal(pedido) {
@@ -325,38 +351,7 @@ function dispararWhatsAppFinal(pedido) {
   const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
   window.open(urlWhatsApp, "_blank");
-  location.reload();
-}
-
-function enviarParaWhatsApp(nome, telefone, endereco, tipoEntrega, formaPagamento, observacao, subtotal, taxaAtual, totalGeral) {
-  let mensagem = `🍕 *NOVO PEDIDO* 🍕\n\n`;
-  mensagem += `👤 *Cliente:* ${nome}\n`;
-  mensagem += `📞 *Telefone:* ${telefone}\n`;
-  mensagem += `📍 *Tipo:* ${tipoEntrega === "retirada" ? "Retirada no Balcão" : "Entrega em Domicílio"}\n`;
-  if (tipoEntrega === "entrega") {
-    mensagem += `🏠 *Endereço:* ${endereco}\n`;
-  }
-  mensagem += `💳 *Pagamento:* ${formaPagamento}\n`;
-  if (observacao) {
-    mensagem += `📝 *Obs:* ${observacao}\n`;
-  }
-  
-  mensagem += `\n🛒 *ITENS DO PEDIDO:*\n`;
-  carrinho.forEach(function (item) {
-    const p = dados.produtos.find(prod => prod.id === item.id);
-    if (!p) return;
-    const totalItem = precoFinal(p) * item.qtd;
-    mensagem += `• ${item.qtd}x ${p.nome} - ${formatarPreco(totalItem)}\n`;
-  });
-
-  mensagem += `\n📦 Subtotal: ${formatarPreco(subtotal)}\n`;
-  mensagem += `🚚 Entrega: ${formatarPreco(taxaAtual)}\n`;
-  mensagem += `💰 *TOTAL: ${formatarPreco(totalGeral)}*`;
-
-  const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5581986379426"; 
-  const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
-
-  window.open(urlWhatsApp, "_blank");
+  location.reload(); // Recarrega a página para limpar o sistema do cliente
 }
 
 // ----- Executa a inicialização ao carregar a página -----
