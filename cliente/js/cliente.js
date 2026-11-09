@@ -348,7 +348,7 @@ function dispararWhatsAppFinal(pedido) {
   mensagem += `💰 *TOTAL PAGO: ${formatarPreco(pedido.total)}*`;
 
   const numeroWhatsApp = dados.pizzaria && dados.pizzaria.whatsapp ? dados.pizzaria.whatsapp : "5581986379426"; 
-  const urlWhatsApp = `https://wa.me/${5581986379426}?text=${encodeURIComponent(mensagem)}`;
+  const urlWhatsApp = `https://wa.me/${NumeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
   window.open(urlWhatsApp, "_blank");
   location.reload(); // Recarrega a página para limpar o sistema do cliente
