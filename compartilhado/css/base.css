@@ -11,12 +11,7 @@ html {
 
 body {
   font-family: Arial, sans-serif;
-  background: url('../imagem/Gemini_Generated_Image_pddp5qpddp5qpddp.jpg');
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center center; /* Centraliza o ponto de partida do fundo */
-  background-attachment: fixed;
-  color: #000000;
+  color: white;
 
 }
 
